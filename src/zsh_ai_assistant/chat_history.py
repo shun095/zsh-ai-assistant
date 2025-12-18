@@ -7,7 +7,7 @@ from .interfaces import ChatHistoryInterface
 class InMemoryChatHistory(ChatHistoryInterface):
     """In-memory implementation of chat history."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize empty chat history."""
         self.messages: List[Dict[str, Any]] = []
 

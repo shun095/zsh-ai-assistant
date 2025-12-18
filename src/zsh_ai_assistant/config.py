@@ -15,7 +15,7 @@ import os
 class AIConfig:
     """Configuration for AI service."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize AI configuration from environment variables."""
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")

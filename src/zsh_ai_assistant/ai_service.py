@@ -19,11 +19,11 @@ class LangChainAIService(AIServiceInterface):
 
         self.config = config
         self.client = ChatOpenAI(
-            api_key=config.api_key,
+            api_key=config.api_key,  # type: ignore[arg-type]
             base_url=config.base_url,
             model=config.model,
             temperature=config.temperature,
-            max_tokens=config.max_tokens,
+            max_tokens=config.max_tokens,  # type: ignore[call-arg]
         )
 
     def generate_command(self, prompt: str) -> str:
@@ -45,7 +45,7 @@ class LangChainAIService(AIServiceInterface):
     def chat(self, messages: List[Dict[str, Any]]) -> str:
         """Generate a response from a chat history."""
         # Convert messages to LangChain format
-        langchain_messages = []
+        langchain_messages: list = []
 
         # Add default system message if no system message is provided
         has_system_message = any(msg.get("role") == "system" for msg in messages)

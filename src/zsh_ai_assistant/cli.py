@@ -3,8 +3,8 @@
 
 import sys
 import json
-from zsh_ai_assistant.config import AIConfig
-from zsh_ai_assistant.ai_service import LangChainAIService
+from zsh_ai_assistant.config import AIConfig  # type: ignore[import-untyped]
+from zsh_ai_assistant.ai_service import LangChainAIService  # type: ignore  # noqa: E501
 
 
 def generate_command(prompt: str, test_mode: bool = False) -> str:
@@ -42,7 +42,7 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     try:
         # Generate command
         command = service.generate_command(prompt)
-        return command.strip()
+        return command.strip()  # type: ignore[no-any-return]
     except Exception as e:
         print(f"Error generating command: {e}", file=sys.stderr)
         sys.exit(1)
@@ -86,7 +86,7 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
     try:
         # Generate response
         response = service.chat(messages)
-        return response.strip()
+        return response.strip()  # type: ignore[no-any-return]
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -109,7 +109,7 @@ def history_to_json(history_lines: str) -> str:
     return json.dumps(messages)
 
 
-def main():
+def main() -> None:
     """Main entry point for CLI utilities."""
     # Check if --test flag is present BEFORE removing it
     test_mode = "--test" in sys.argv
