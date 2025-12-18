@@ -3,18 +3,11 @@ import pexpect
 import sys
 import os
 from pathlib import Path
-
-import sys
-
-
-import sys
-import pexpect
-
-
 import re
 
+
 class PexpectPrefixLogger:
-    _split_re = re.compile(r'(\r\n|\n|\r)')
+    _split_re = re.compile(r"(\r\n|\n|\r)")
 
     def __init__(self, prefix: str, stream):
         self.prefix = prefix
@@ -47,15 +40,16 @@ class PexpectPrefixLogger:
 
 class TestInteractive:
     """Test cases for interface definitions."""
+
     child = None
-    
+
     def setup_method(self):
         """Setup method to run before each test method."""
         self.child = pexpect.spawn("zsh -f", timeout=10, encoding="utf-8")
         # self.child.logfile_send = PexpectPrefixLogger("send: ", sys.stdout)
         self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
 
-        self.child.sendline("echo \"=== SETUP START ===\"")
+        self.child.sendline('echo "=== SETUP START ==="')
         self.child.expect("%")
         self.child.sendline("PS1='%m%# '")
         self.child.expect("%")
@@ -66,33 +60,39 @@ class TestInteractive:
         # Source oh-my-zsh if it exists, otherwise just set up the plugin
         zsh_path = "/tmp/ohmyzsh/"
         ohmyzsh_sh = "oh-my-zsh.sh"
-        
+
         self.child.sendline(f"export ZSH={zsh_path}")
         self.child.expect("%")
         if os.path.isfile(os.path.join(zsh_path, ohmyzsh_sh)):
             self.child.sendline(f"source {zsh_path}{ohmyzsh_sh}")
             self.child.expect("%")
         else:
-            install_cmd = "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+            u = (
+                "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/"
+                "install.sh"
+            )
+            install_cmd = f'sh -c "$(curl -fsSL {u})"'
             self.child.sendline(f"yes | {install_cmd}")
             self.child.expect("Run zsh to try it out.")
             self.child.expect("%")
             self.child.sendline(f"source {zsh_path}{ohmyzsh_sh}")
             self.child.expect("%")
-        
+
         # Set test mode for the plugin
         self.child.sendline("export ZSH_AI_ASSISTANT_TEST_MODE=1")
         self.child.expect("%")
         self.child.sendline("where zle")
         self.child.expect("%")
-        
-        script_path = Path(__file__).parent.parent.parent / "zsh-ai-assistant.plugin.zsh"
+
+        script_path = (
+            Path(__file__).parent.parent.parent / "zsh-ai-assistant.plugin.zsh"
+        )
         script_path = script_path.resolve()
         self.child.sendline(f"source {script_path}")
         self.child.expect("%")
-        self.child.sendline("echo \"=== SETUP END ===\"")
+        self.child.sendline('echo "=== SETUP END ==="')
         self.child.expect("%")
-    
+
     def teardown_method(self):
         """Teardown method to run after each test method."""
         if self.child and self.child.isalive():
@@ -103,7 +103,7 @@ class TestInteractive:
                 self.child.terminate()
             self.child.close()
         self.child = None
-    
+
     def test_command_generation(self):
         # コマンド変換がされること。
         self.child.send("# Simple command to list current directory files\r")
@@ -138,7 +138,6 @@ class TestInteractive:
         self.child.expect("%")
         self.child.sendline("exit")
         self.child.expect(pexpect.EOF)
-
 
     def test_chat_multiturn(self):
         # チャットが正常に起動すること

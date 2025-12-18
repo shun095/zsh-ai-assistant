@@ -65,3 +65,85 @@ uv run pytest -v --cov=src --cov-report=html
 # View coverage report
 xdg-open htmlcov/index.html
 ```
+
+### Shell Tests
+```bash
+# Run shell integration tests
+uv run pytest tests/shell/ -v
+
+# Run specific shell test
+uv run pytest tests/shell/test_interactive.py::TestInteractive::test_command_generation -v
+```
+
+## Linting and Code Quality
+
+The project uses three linters to ensure code quality:
+
+### Linters Configuration
+- **Black**: Code formatter (line-length: 88)
+- **Flake8**: Style linter (line-length: 88, ignores E203, W503)
+- **Mypy**: Type checker (Python 3.10+)
+
+Configuration files:
+- `pyproject.toml` - Black and Mypy configuration
+- `setup.cfg` - Flake8 configuration
+
+### Running Linters
+```bash
+# Run all linters
+eval "$(uv venv shell)"
+uv run black --check src tests
+uv run flake8 src tests
+uv run mypy src tests
+
+# Auto-format code with Black
+uv run black src tests
+
+# Run linters and tests together (CI workflow simulation)
+uv run black src tests && \
+uv run flake8 src tests && \
+uv run pytest tests/python/ tests/shell/ -q
+```
+
+### Linter Guidelines
+
+**Black**:
+- Automatically formats code to PEP 8 standards
+- Line length: 88 characters
+- Run `uv run black src tests` to format all files
+- Run `uv run black --check src tests` to verify formatting
+
+**Flake8**:
+- Checks for style violations
+- Ignores E203 (whitespace before ':') and W503 (line break before binary operator)
+- Configuration in `setup.cfg`
+- Common issues to fix:
+  - Unused imports (F401)
+  - Blank lines with whitespace (W293)
+  - Line too long (E501)
+  - Undefined names (F821)
+  - Unused variables (F841)
+
+**Mypy**:
+- Type checking for Python code
+- Python version: 3.10+
+- Reports missing type annotations
+- Run `uv run mypy src tests` to check types
+
+### CI/CD Integration
+
+The project has a GitHub Actions workflow for linting:
+- `.github/workflows/lint.yml` - Runs on push and pull requests
+- Executes Black, Flake8, and Mypy
+- Must pass before code can be merged
+
+To test locally before pushing:
+```bash
+# Simulate CI workflow
+eval "$(uv venv shell)"
+uv sync --all-extras
+uv run black src tests
+uv run flake8 src tests
+uv run mypy src tests
+uv run pytest tests/python/ tests/shell/ -q
+```
