@@ -28,4 +28,4 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run pytest tests/python -v -s
+          uv run pytest -v -s
