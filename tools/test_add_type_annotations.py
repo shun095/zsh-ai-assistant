@@ -148,9 +148,7 @@ class TestAddTypeAnnotations(unittest.TestCase):
             result = f.read()
 
         # Should add -> None after the closing parenthesis
-        self.assertIn(
-            "def test_multiline(\n    param1,\n    param2,\n    param3\n) -> None:", result
-        )
+        self.assertIn("def test_multiline(\n    param1,\n    param2,\n    param3\n) -> None:", result)
 
     def test_class_methods(self) -> None:
         """Test handling of class methods."""

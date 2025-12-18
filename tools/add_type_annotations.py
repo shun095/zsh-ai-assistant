@@ -22,7 +22,7 @@ def add_return_type_annotations(file_path: str) -> None:
         # If no return type exists, add -> None
         if not return_type:
             return f"{func_sig} -> None:"
-        return match.group(0)
+        return match.group(0)  # type: ignore[no-any-return]
 
     new_content = re.sub(pattern, add_return_type, content, flags=re.MULTILINE)
 
