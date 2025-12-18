@@ -119,13 +119,27 @@ class TestInteractive:
         assert self.child is not None
         child_spawn: pexpect.spawn = self.child
         # コマンド変換がされること。
-        child_spawn.send("# Simple command to list current directory files\r")
+        child_spawn.send("# list current directory files\r")
         # Wait for the command to be transformed to 'ls'
         child_spawn.expect("ls")
         # Send Enter to execute the command
         child_spawn.send("\r")
         # Wait for the command output (ls listing)
         child_spawn.expect("pyproject.toml", timeout=5)
+        # Wait for the prompt to return
+        child_spawn.expect("%", timeout=5)
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)
+
+    def test_command_generation_git_status(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+        # コマンド変換がされること。
+        child_spawn.send("# check git current status\r")
+        # Wait for the command to be transformed to 'ls'
+        child_spawn.expect("git status")
+        # Send Enter to execute the command
+        child_spawn.send("\r")
         # Wait for the prompt to return
         child_spawn.expect("%", timeout=5)
         child_spawn.sendline("exit")

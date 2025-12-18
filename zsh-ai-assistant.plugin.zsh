@@ -75,7 +75,7 @@ zsh_ai_assistant_convert_comment_to_command() {
     
     # Trim leading and trailing whitespace
     comment="${comment#"${comment%%[![:space:]]*}"}"
-    comment="${comment%%[[:space:]]*}"
+    comment=$(echo "$comment" | sed 's/[[:space:]]*$//')
     
     if [[ -z "$comment" ]]; then
         return 1

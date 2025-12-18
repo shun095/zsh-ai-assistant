@@ -16,16 +16,15 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     if test_mode:
         # Simple test mode: map common prompts to commands
         test_prompts = {
-            "list files": "ls",
+            "check git current status": "git status",
             "list current directory files": "ls",
-            "show files": "ls",
         }
         for key, cmd in test_prompts.items():
             if key in prompt.lower():
                 return cmd
 
         # Default fallback for test mode
-        return "ls"
+        return 'echo "hello world"'
 
     # Normal mode: require valid configuration
     if not config.is_valid:
