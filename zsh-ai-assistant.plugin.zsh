@@ -78,92 +78,6 @@ zsh_ai_assistant_hide_loading() {
     # This function is kept for API consistency
     :
 }
-=======
-# Show loading message in prompt
-zsh_ai_assistant_show_loading() {
-    # Only show loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Save current prompt
-        local saved_prompt="$PROMPT"
-        # Show loading message
-        PROMPT="%F{yellow}🤖 Generating command...%f %# "
-        # Reset prompt to force update
-        zle reset-prompt
-        # Restore original prompt
-        PROMPT="$saved_prompt"
-    fi
-}
-
-# Hide loading message and restore original prompt
-zsh_ai_assistant_hide_loading() {
-    # Only hide loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        zle reset-prompt
-    fi
-}
-=======
-# Show loading message in buffer
-zsh_ai_assistant_show_loading() {
-    # Only show loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Show loading message in buffer
-        BUFFER="🤖 Generating command..."
-        # Move cursor to end
-        CURSOR=${#BUFFER}
-        # Use zle -R for buffer update only (not reset-prompt)
-        zle -R
-    fi
-}
-
-# Hide loading message (no-op, buffer is already restored)
-zsh_ai_assistant_hide_loading() {
-    # No action needed as buffer is restored in show_loading
-    # This function is kept for API consistency
-    :
-}
-=======
-# Show loading message in buffer
-zsh_ai_assistant_show_loading() {
-    # Only show loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Show loading message in buffer
-        BUFFER="🤖 Generating command..."
-        # Move cursor to end
-        CURSOR=${#BUFFER}
-        # Use zle -R for buffer update only (not reset-prompt)
-        zle -R
-    fi
-}
-
-# Hide loading message (no-op, buffer is already restored)
-zsh_ai_assistant_hide_loading() {
-    # No action needed as buffer is restored in show_loading
-    # This function is kept for API consistency
-    :
-}
-=======
-# Show loading message in prompt
-zsh_ai_assistant_show_loading() {
-    # Only show loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Save current prompt
-        local saved_prompt="$PROMPT"
-        # Show loading message
-        PROMPT="%F{yellow}🤖 Generating command...%f %# "
-        # Reset prompt to force update
-        zle reset-prompt
-        # Restore original prompt
-        PROMPT="$saved_prompt"
-    fi
-}
-
-# Hide loading message and restore original prompt
-zsh_ai_assistant_hide_loading() {
-    # Only hide loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        zle reset-prompt
-    fi
-}
 
 # Core command transformation logic (testable without zle)
 zsh_ai_assistant_convert_comment_to_command() {
@@ -212,24 +126,6 @@ zsh_ai_assistant_transform_command() {
     zsh_ai_assistant_show_loading
     
     local generated_command=""
-    generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
-=======
-    local generated_command
->>>>>>> master
-    generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
-=======
-    zsh_ai_assistant_show_loading
-    
-    local generated_command=""
-    generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
-=======
-    zsh_ai_assistant_show_loading
-    
-    local generated_command=""
-    generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
-=======
-    local generated_command
->>>>>>> master
     generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
     
     # Hide loading message after generation
