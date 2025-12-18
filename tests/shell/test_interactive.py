@@ -3,25 +3,19 @@ import pexpect
 import sys
 import os
 from pathlib import Path
-
-import sys
-
-
-import sys
-import pexpect
-
-
 import re
+from typing import Optional
+
 
 class PexpectPrefixLogger:
-    _split_re = re.compile(r'(\r\n|\n|\r)')
+    _split_re = re.compile(r"(\r\n|\n|\r)")
 
-    def __init__(self, prefix: str, stream):
+    def __init__(self, prefix: str, stream: object) -> None:
         self.prefix = prefix
         self.stream = stream
         self._at_line_start = True  # 最初は行頭
 
-    def write(self, data: str):
+    def write(self, data: str) -> None:
         if not data:
             return
 
@@ -29,71 +23,88 @@ class PexpectPrefixLogger:
 
         for token in tokens:
             if token in ("\n", "\r", "\r\n"):
-                self.stream.write(token)
+                self._write_to_stream(token)
                 self._at_line_start = True
                 continue
 
             if token:
                 if self._at_line_start:
-                    self.stream.write(self.prefix)
+                    self._write_to_stream(self.prefix)
                     self._at_line_start = False
 
-                self.stream.write(token)
+                self._write_to_stream(token)
 
-    def flush(self):
+    def _write_to_stream(self, text: str) -> None:
+        """Helper method to write to stream with proper type handling."""
+        if hasattr(self.stream, "write"):
+            self.stream.write(text)
+
+    def flush(self) -> None:
         if hasattr(self.stream, "flush"):
             self.stream.flush()
 
 
 class TestInteractive:
     """Test cases for interface definitions."""
-    child = None
-    
-    def setup_method(self):
+
+    child: Optional[pexpect.spawn] = None
+
+    def _assert_child_is_spawn(self) -> pexpect.spawn:
+        """Assert that child is a pexpect.spawn instance and return it."""
+        assert self.child is not None, "child should be initialized by setup_method"
+        assert isinstance(self.child, pexpect.spawn), "child should be a pexpect.spawn instance"
+        return self.child
+
+    def setup_method(self) -> None:
         """Setup method to run before each test method."""
-        self.child = pexpect.spawn("zsh -f", timeout=10, encoding="utf-8")
+        # Initialize child if not already set
+        if self.child is None:
+            self.child = pexpect.spawn("zsh -f", timeout=10, encoding="utf-8")
         # self.child.logfile_send = PexpectPrefixLogger("send: ", sys.stdout)
         self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
+        # Type narrowing - child is guaranteed to be pexpect.spawn here
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+        child_spawn.sendline('echo "=== SETUP START ==="')
+        child_spawn.expect("%")
+        child_spawn.sendline("PS1='%m%# '")
+        child_spawn.expect("%")
 
-        self.child.sendline("echo \"=== SETUP START ===\"")
-        self.child.expect("%")
-        self.child.sendline("PS1='%m%# '")
-        self.child.expect("%")
-
-        self.child.sendline("pwd")
-        self.child.expect("%")
+        child_spawn.sendline("pwd")
+        child_spawn.expect("%")
 
         # Source oh-my-zsh if it exists, otherwise just set up the plugin
         zsh_path = "/tmp/ohmyzsh/"
         ohmyzsh_sh = "oh-my-zsh.sh"
-        
-        self.child.sendline(f"export ZSH={zsh_path}")
-        self.child.expect("%")
+
+        child_spawn.sendline(f"export ZSH={zsh_path}")
+        child_spawn.expect("%")
         if os.path.isfile(os.path.join(zsh_path, ohmyzsh_sh)):
-            self.child.sendline(f"source {zsh_path}{ohmyzsh_sh}")
-            self.child.expect("%")
+            child_spawn.sendline(f"source {zsh_path}{ohmyzsh_sh}")
+            child_spawn.expect("%")
         else:
-            install_cmd = "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
-            self.child.sendline(f"yes | {install_cmd}")
-            self.child.expect("Run zsh to try it out.")
-            self.child.expect("%")
-            self.child.sendline(f"source {zsh_path}{ohmyzsh_sh}")
-            self.child.expect("%")
-        
+            u = "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/" "install.sh"
+            install_cmd = f'sh -c "$(curl -fsSL {u})"'
+            child_spawn.sendline(f"yes | {install_cmd}")
+            child_spawn.expect("Run zsh to try it out.")
+            child_spawn.expect("%")
+            child_spawn.sendline(f"source {zsh_path}{ohmyzsh_sh}")
+            child_spawn.expect("%")
+
         # Set test mode for the plugin
-        self.child.sendline("export ZSH_AI_ASSISTANT_TEST_MODE=1")
-        self.child.expect("%")
-        self.child.sendline("where zle")
-        self.child.expect("%")
-        
+        child_spawn.sendline("export ZSH_AI_ASSISTANT_TEST_MODE=1")
+        child_spawn.expect("%")
+        child_spawn.sendline("where zle")
+        child_spawn.expect("%")
+
         script_path = Path(__file__).parent.parent.parent / "zsh-ai-assistant.plugin.zsh"
         script_path = script_path.resolve()
-        self.child.sendline(f"source {script_path}")
-        self.child.expect("%")
-        self.child.sendline("echo \"=== SETUP END ===\"")
-        self.child.expect("%")
-    
-    def teardown_method(self):
+        child_spawn.sendline(f"source {script_path}")
+        child_spawn.expect("%")
+        child_spawn.sendline('echo "=== SETUP END ==="')
+        child_spawn.expect("%")
+
+    def teardown_method(self) -> None:
         """Teardown method to run after each test method."""
         if self.child and self.child.isalive():
             self.child.sendline("exit")
@@ -103,57 +114,64 @@ class TestInteractive:
                 self.child.terminate()
             self.child.close()
         self.child = None
-    
-    def test_command_generation(self):
+
+    def test_command_generation(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
         # コマンド変換がされること。
-        self.child.send("# Simple command to list current directory files\r")
+        child_spawn.send("# Simple command to list current directory files\r")
         # Wait for the command to be transformed to 'ls'
-        self.child.expect("ls")
+        child_spawn.expect("ls")
         # Send Enter to execute the command
-        self.child.send("\r")
+        child_spawn.send("\r")
         # Wait for the command output (ls listing)
-        self.child.expect("pyproject.toml", timeout=5)
+        child_spawn.expect("pyproject.toml", timeout=5)
         # Wait for the prompt to return
-        self.child.expect("%", timeout=5)
-        self.child.sendline("exit")
-        self.child.expect(pexpect.EOF)
+        child_spawn.expect("%", timeout=5)
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)
 
-    def test_normal_command(self):
+    def test_normal_command(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
         # コマンド変換がスキップされ通常のコマンド実行ができること。
-        self.child.send("echo 'hello'\r")
-        self.child.expect("hello")
-        self.child.sendline("exit")
-        self.child.expect(pexpect.EOF)
+        child_spawn.send("echo 'hello'\r")
+        child_spawn.expect("hello")
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)
 
-    def test_chat(self):
+    def test_chat(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
         # チャットが正常に起動すること
-        self.child.send("aiask\r")
-        self.child.expect("Me:")
+        child_spawn.send("aiask\r")
+        child_spawn.expect("Me:")
         # Send hello directly
-        self.child.sendline("hello")
-        self.child.expect("AI:")
-        self.child.expect("Hello")
-        self.child.expect("Me:")
-        self.child.sendline("quit")
-        self.child.expect("%")
-        self.child.sendline("exit")
-        self.child.expect(pexpect.EOF)
+        child_spawn.sendline("hello")
+        child_spawn.expect("AI:")
+        child_spawn.expect("Hello")
+        child_spawn.expect("Me:")
+        child_spawn.sendline("quit")
+        child_spawn.expect("%")
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)
 
-
-    def test_chat_multiturn(self):
+    def test_chat_multiturn(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
         # チャットが正常に起動すること
-        self.child.send("aiask\r")
-        self.child.expect("Me:")
+        child_spawn.send("aiask\r")
+        child_spawn.expect("Me:")
         # Send hello directly
-        self.child.sendline("hello")
-        self.child.expect("AI:")
-        self.child.expect("Hello")
-        self.child.expect("Me:")
-        self.child.sendline("world")
-        self.child.expect("AI:")
-        self.child.expect("I received")
-        self.child.expect("Me:")
-        self.child.sendline("quit")
-        self.child.expect("%")
-        self.child.sendline("exit")
-        self.child.expect(pexpect.EOF)
+        child_spawn.sendline("hello")
+        child_spawn.expect("AI:")
+        child_spawn.expect("Hello")
+        child_spawn.expect("Me:")
+        child_spawn.sendline("world")
+        child_spawn.expect("AI:")
+        child_spawn.expect("I received")
+        child_spawn.expect("Me:")
+        child_spawn.sendline("quit")
+        child_spawn.expect("%")
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)
