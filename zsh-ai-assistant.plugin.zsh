@@ -59,6 +59,29 @@ fi
 # Check if required Python modules are available
 # This check will be done when functions are called, not during plugin load
 
+# Show loading message in prompt
+zsh_ai_assistant_show_loading() {
+    # Only show loading message if ZLE is active
+    if [[ -n "${ZLE_STATE:-}" ]]; then
+        # Save current prompt
+        local saved_prompt="$PROMPT"
+        # Show loading message
+        PROMPT="%F{yellow}🤖 Generating command...%f %# "
+        # Reset prompt to force update
+        zle reset-prompt
+        # Restore original prompt
+        PROMPT="$saved_prompt"
+    fi
+}
+
+# Hide loading message and restore original prompt
+zsh_ai_assistant_hide_loading() {
+    # Only hide loading message if ZLE is active
+    if [[ -n "${ZLE_STATE:-}" ]]; then
+        zle reset-prompt
+    fi
+}
+
 # Core command transformation logic (testable without zle)
 zsh_ai_assistant_convert_comment_to_command() {
     local prompt="$1"
@@ -103,8 +126,14 @@ zsh_ai_assistant_convert_comment_to_command() {
 zsh_ai_assistant_transform_command() {
     local prompt="$1"
     
+    # Show loading message before generating command
+    zsh_ai_assistant_show_loading
+    
     local generated_command
     generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
+    
+    # Hide loading message after generation
+    zsh_ai_assistant_hide_loading
     
     if [[ -n "$generated_command" ]]; then
         # Replace the current prompt with the generated command
