@@ -9,6 +9,26 @@ This document provides guidelines for AI agents (like me) working on the zsh-ai-
 - **Python backend**: AI service using LangChain (`src/zsh_ai_assistant/`)
 - **Tests**: Python tests (pytest)
 
+## Development Tools
+
+The project includes utility scripts to help with development:
+
+### Type Annotation Helper
+
+**Location:** `tools/add_type_annotations.py`
+
+**Purpose:** Automatically adds `-> None` return type annotations to function definitions in test files.
+
+**Usage:**
+```bash
+# Run the script to add return type annotations to all test files
+python tools/add_type_annotations.py
+```
+
+**Note:** This is a helper tool and may not handle all edge cases. Manual review is recommended after using it.
+
+---
+
 ## Development Environment Setup
 
 ### Prerequisites
