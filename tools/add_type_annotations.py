@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import re
-import sys
 from pathlib import Path
+from typing import Optional
 
 
 def add_return_type_annotations(file_path: str) -> None:
@@ -18,7 +18,7 @@ def add_return_type_annotations(file_path: str) -> None:
 
     def add_return_type(match: re.Match) -> str:
         func_sig = match.group(1)
-        return_type = match.group(3)
+        return_type: Optional[str] = match.group(3)
         # If no return type exists, add -> None
         if not return_type:
             return f"{func_sig} -> None:"
