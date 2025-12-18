@@ -195,8 +195,8 @@ class TestInteractive:
         child_spawn: pexpect.spawn = self.child
         # Test that loading message is displayed during command generation
         child_spawn.send("# list current directory files\r")
-        # Wait for either the loading message or the transformed command
-        # The loading message might be very brief, so we check for the final result
+        # Wait for the loading message to appear in the buffer
+        # The loading message might be very brief due to the 0.1s delay
         try:
             child_spawn.expect("🤖 Generating command...")
         except pexpect.TIMEOUT:

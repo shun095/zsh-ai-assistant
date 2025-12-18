@@ -59,27 +59,32 @@ fi
 # Check if required Python modules are available
 # This check will be done when functions are called, not during plugin load
 
-# Show loading message in prompt
+# Show loading message in buffer
 zsh_ai_assistant_show_loading() {
     # Only show loading message if ZLE is active
     if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Save current prompt
-        local saved_prompt="$PROMPT"
-        # Show loading message
-        PROMPT="%F{yellow}🤖 Generating command...%f %# "
+        # Save current buffer
+        local saved_buffer="$BUFFER"
+        # Show loading message in buffer
+        BUFFER="%F{yellow}🤖 Generating command...%f"
+        # Move cursor to end
+        CURSOR=${#BUFFER}
         # Reset prompt to force update
         zle reset-prompt
-        # Restore original prompt
-        PROMPT="$saved_prompt"
+        # Restore original buffer after brief delay
+        # Using a small delay to ensure visibility
+        sleep 0.1
+        BUFFER="$saved_buffer"
+        CURSOR=${#BUFFER}
+        zle reset-prompt
     fi
 }
 
-# Hide loading message and restore original prompt
+# Hide loading message (no-op, buffer is already restored)
 zsh_ai_assistant_hide_loading() {
-    # Only hide loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        zle reset-prompt
-    fi
+    # No action needed as buffer is restored in show_loading
+    # This function is kept for API consistency
+    :
 }
 
 # Core command transformation logic (testable without zle)
