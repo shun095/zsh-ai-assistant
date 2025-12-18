@@ -168,6 +168,95 @@ uv run mypy src tests
 uv run pytest tests/python/ tests/shell/ -q
 ```
 
+## STRICT DOCUMENT CLEANUP POLICY
+
+### Document Cleanup Is MANDATORY
+
+**ALL developers MUST remove unnecessary documentation files before committing.** This includes:
+- Summary files (e.g., `FINAL_SUMMARY.md`, `COMPLETION_SUMMARY.md`)
+- Temporary notes or scratch files
+- Outdated documentation
+- Redundant or duplicate files
+
+### Why Document Cleanup Is Required
+
+1. **Codebase Hygiene**: Unnecessary files clutter the repository and confuse new contributors
+2. **Version Control Efficiency**: Large documentation files bloat the git history
+3. **Professionalism**: A clean repository demonstrates attention to detail
+4. **Maintainability**: Reduces the risk of outdated information being referenced
+
+### Document Cleanup Guidelines
+
+#### What to Remove
+
+- **Project summary files**: Any `.md` files that document completion status, final summaries, or project wrap-ups
+- **Temporary files**: Files with names like `NOTES.md`, `TEMP.md`, `DRAFT.md`, or `TODO.md`
+- **Redundant documentation**: Files that duplicate information already in `README.md` or `AGENTS.md`
+- **Outdated files**: Documentation that references old versions, deprecated features, or completed tasks
+
+#### What to Keep
+
+- **Essential documentation**: `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, and other core documentation files
+- **API documentation**: Type stubs, docstrings, and inline documentation
+- **Configuration files**: `pyproject.toml`, `setup.cfg`, and other build configuration files
+- **Test documentation**: Test case descriptions and test-specific documentation
+
+#### Cleanup Checklist Before Committing
+
+Before committing any changes, run:
+```bash
+# 1. List all markdown files to review
+find . -name "*.md" -type f
+
+# 2. List all text files to review
+find . -name "*.txt" -type f
+
+# 3. List all temporary/scratch files
+find . \( -name "*.tmp" -o -name "*.bak" -o -name "*.old" -o -name "NOTES*" -o -name "TEMP*" -o -name "DRAFT*" \) -type f
+
+# 4. Review each file and remove unnecessary ones
+```
+
+### Forbidden Practices
+
+**NEVER do any of the following:**
+
+1. **Committing summary files:**
+```bash
+# FORBIDDEN - Never commit these
+FINAL_SUMMARY.md
+COMPLETION_SUMMARY.md
+PROJECT_NOTES.md
+```
+
+2. **Leaving temporary files:**
+```bash
+# FORBIDDEN - Always clean up
+NOTES.md
+TEMP.md
+DRAFT.md
+*.bak
+*.tmp
+```
+
+3. **Creating redundant documentation:**
+```bash
+# FORBIDDEN - Don't duplicate existing docs
+README_BACKUP.md
+AGENTS_COPY.md
+```
+
+### Consequences of Violating This Policy
+
+- Unnecessary files will be removed during code review
+- Repeated violations may result in manual cleanup by maintainers
+- PRs with unnecessary files may be rejected
+- Contributors are expected to maintain a clean repository
+
+This strict policy ensures the codebase remains organized, professional, and easy to navigate.
+
+---
+
 ## STRICT TYPE ANNOTATION POLICY
 
 ### Type Annotations Are MANDATORY

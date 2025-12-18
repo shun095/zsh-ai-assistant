@@ -59,27 +59,24 @@ fi
 # Check if required Python modules are available
 # This check will be done when functions are called, not during plugin load
 
-# Show loading message in prompt
+# Show loading message in buffer
 zsh_ai_assistant_show_loading() {
     # Only show loading message if ZLE is active
     if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Save current prompt
-        local saved_prompt="$PROMPT"
-        # Show loading message
-        PROMPT="%F{yellow}🤖 Generating command...%f %# "
-        # Reset prompt to force update
-        zle reset-prompt
-        # Restore original prompt
-        PROMPT="$saved_prompt"
+        # Show loading message in buffer
+        BUFFER="🤖 Generating command..."
+        # Move cursor to end
+        CURSOR=${#BUFFER}
+        # Use zle -R for buffer update only (not reset-prompt)
+        zle -R
     fi
 }
 
-# Hide loading message and restore original prompt
+# Hide loading message (no-op, buffer is already restored)
 zsh_ai_assistant_hide_loading() {
-    # Only hide loading message if ZLE is active
-    if [[ -n "${ZLE_STATE:-}" ]]; then
-        zle reset-prompt
-    fi
+    # No action needed as buffer is restored in show_loading
+    # This function is kept for API consistency
+    :
 }
 
 # Core command transformation logic (testable without zle)
@@ -111,7 +108,7 @@ zsh_ai_assistant_convert_comment_to_command() {
         test_flag="--test"
     fi
     
-    local generated_command
+    local generated_command=""
     generated_command=$(uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$comment" 2>/dev/null)
     
     if [[ -n "$generated_command" ]]; then
@@ -126,10 +123,9 @@ zsh_ai_assistant_convert_comment_to_command() {
 zsh_ai_assistant_transform_command() {
     local prompt="$1"
     
-    # Show loading message before generating command
     zsh_ai_assistant_show_loading
     
-    local generated_command
+    local generated_command=""
     generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
     
     # Hide loading message after generation
@@ -142,7 +138,8 @@ zsh_ai_assistant_transform_command() {
         CURSOR=${#BUFFER}
         # Only call zle commands if ZLE is active
         if [[ -n "${ZLE_STATE:-}" ]]; then
-            zle reset-prompt
+            # Use zle -R for buffer update only (not reset-prompt)
+            zle -R
         fi
         # Don't execute the command, just show it in the prompt
         return 0
@@ -225,10 +222,11 @@ if [[ -n "$ZSH_VERSION" ]] && command -v zle >/dev/null 2>&1; then
         if zsh_ai_assistant_check_for_comment "$BUFFER"; then
             # Call the transform command function
             zsh_ai_assistant_transform_command "$BUFFER"
-            # After transformation, we need to reset the prompt to show the new command
+            # After transformation, we need to redraw the buffer to show the new command
             # but NOT execute it yet. The user will need to press Enter again.
             if [[ -n "${ZLE_STATE:-}" ]]; then
-                zle reset-prompt
+                # Use zle -R for buffer update only (not reset-prompt)
+                zle -R
             fi
             # Don't execute, just show the transformed command
             return
