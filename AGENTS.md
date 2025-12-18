@@ -147,3 +147,218 @@ uv run flake8 src tests
 uv run mypy src tests
 uv run pytest tests/python/ tests/shell/ -q
 ```
+
+## STRICT TYPE ANNOTATION POLICY
+
+### Type Annotations Are MANDATORY
+
+**ALL Python code MUST have complete type annotations.** This includes:
+- Source code (`src/` directory)
+- Tests (`tests/` directory)
+- Configuration files
+- Utility scripts
+
+### Why Type Annotations Are Required
+
+1. **Code Quality**: Type annotations catch bugs early and make code more maintainable
+2. **IDE Support**: Better autocomplete and refactoring support
+3. **Documentation**: Type hints serve as self-documenting code
+4. **CI/CD Reliability**: Consistent type checking prevents regressions
+
+### Mypy Configuration
+
+The project uses strict mypy settings:
+- `disallow_untyped_defs = true` - All functions must have type annotations
+- `disallow_incomplete_defs = true` - All function parameters and return types must be annotated
+- `warn_return_any = true` - No `Any` return types allowed
+- `warn_unused_configs = true` - Detect unused mypy configurations
+- `warn_redundant_casts = true` - Detect unnecessary type casts
+- `warn_unused_ignores = true` - Detect unused `# type: ignore` comments
+
+### Type Annotation Guidelines
+
+#### Function Definitions
+```python
+# CORRECT - Full type annotations
+def calculate_sum(a: int, b: int) -> int:
+    return a + b
+
+# INCORRECT - Missing return type
+def calculate_sum(a: int, b: int):
+    return a + b
+
+# INCORRECT - Missing parameter types
+def calculate_sum(a, b) -> int:
+    return a + b
+```
+
+#### Method Definitions
+```python
+# CORRECT - Full type annotations
+class Calculator:
+    def __init__(self, value: int) -> None:
+        self.value = value
+    
+    def add(self, amount: int) -> int:
+        return self.value + amount
+
+# INCORRECT - Missing return type on __init__
+class Calculator:
+    def __init__(self, value: int):
+        self.value = value
+```
+
+#### Test Functions
+```python
+# CORRECT - Full type annotations
+import pytest
+
+def test_addition() -> None:
+    assert 1 + 1 == 2
+
+class TestCalculator:
+    def test_sum(self) -> None:
+        assert sum([1, 2, 3]) == 6
+
+# INCORRECT - Missing return type
+class TestCalculator:
+    def test_sum():
+        assert sum([1, 2, 3]) == 6
+```
+
+#### Handling External Libraries Without Type Stubs
+
+For external libraries that don't have type stubs (e.g., `pexpect`), you MUST:
+
+1. **Add `# type: ignore` comment** on the import line:
+```python
+import pexpect  # type: ignore[import-untyped]
+```
+
+2. **Use `object` type** for unknown types:
+```python
+class PexpectPrefixLogger:
+    def __init__(self, prefix: str, stream: object) -> None:
+        self.prefix = prefix
+        self.stream = stream
+```
+
+3. **DO NOT** use `ignore_missing_imports` or `disallow_untyped_defs = false` in mypy config
+
+### Forbidden Practices
+
+**NEVER do any of the following:**
+
+1. **Adding overrides to disable type checking:**
+```python
+# FORBIDDEN - This disables type checking entirely
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+```
+
+2. **Using `# type: ignore` without specific error code:**
+```python
+# FORBIDDEN - Too broad
+result = some_function()  # type: ignore
+
+# CORRECT - Specific error code
+result = some_function()  # type: ignore[no-any-return]
+```
+
+3. **Using `Any` type unnecessarily:**
+```python
+# FORBIDDEN - Avoid Any when possible
+from typing import Any
+
+def process_data(data: Any) -> Any:
+    return data
+
+# CORRECT - Use specific types
+from typing import Union
+
+def process_data(data: Union[str, int]) -> str:
+    return str(data)
+```
+
+4. **Using `ignore_missing_imports` in mypy config:**
+```python
+# FORBIDDEN - This hides all import errors
+[mypy]
+ignore_missing_imports = true
+```
+
+### Fixing Type Errors
+
+When you encounter type errors:
+
+1. **First, understand the error:**
+   ```bash
+   uv run mypy src tests --show-error-codes
+   ```
+
+2. **Add proper type annotations:**
+   - Add missing parameter types
+   - Add missing return type annotations
+   - Use specific types instead of `Any`
+
+3. **For external libraries:**
+   - Add `# type: ignore[import-untyped]` on the import line
+   - Use `object` type for unknown attributes
+
+4. **Test your changes:**
+   ```bash
+   uv run mypy src tests
+   ```
+
+### Example: Fixing a Type Error
+
+**Before (has type errors):**
+```python
+class Logger:
+    def __init__(self, stream):
+        self.stream = stream
+    
+    def write(self, data):
+        self.stream.write(data)
+```
+
+**After (fixed):**
+```python
+class Logger:
+    def __init__(self, stream: object) -> None:
+        self.stream = stream
+    
+    def write(self, data: str) -> None:
+        self.stream.write(data)  # type: ignore[attr-defined]
+```
+
+### Final Checklist Before Committing
+
+Before committing any changes, run:
+```bash
+# 1. Check all type annotations
+uv run mypy src tests
+
+# 2. Verify code formatting
+uv run black --check src tests
+
+# 3. Run style checks
+uv run flake8 src tests
+
+# 4. Run all tests
+uv run pytest tests/python/ tests/shell/ -q
+
+# 5. All checks must pass with ZERO errors
+```
+
+**If any check fails, fix the issues before committing.**
+
+### Consequences of Violating This Policy
+
+- Code with missing type annotations will be rejected in code review
+- CI/CD pipeline will fail
+- PRs will not be merged until all type errors are fixed
+- Repeated violations may result in removal from contributor access
+
+This strict policy ensures the codebase remains maintainable, reliable, and professional.

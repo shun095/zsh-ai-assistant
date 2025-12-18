@@ -10,7 +10,7 @@ from zsh_ai_assistant.config import AIConfig
 class TestInterfaces:
     """Test cases for interface definitions."""
 
-    def test_aiserviceinterface_has_required_methods(self):
+    def test_aiserviceinterface_has_required_methods(self) -> None:
         """Test AIServiceInterface has required abstract methods."""
         # Check that AIServiceInterface is an abstract class
         assert issubclass(AIServiceInterface, ABC)
@@ -20,12 +20,10 @@ class TestInterfaces:
         assert hasattr(AIServiceInterface, "chat")
 
         # Verify they are abstract methods by checking if they have __isabstractmethod__
-        assert getattr(
-            AIServiceInterface.generate_command, "__isabstractmethod__", False
-        )
+        assert getattr(AIServiceInterface.generate_command, "__isabstractmethod__", False)
         assert getattr(AIServiceInterface.chat, "__isabstractmethod__", False)
 
-    def test_chathistoryinterface_has_required_methods(self):
+    def test_chathistoryinterface_has_required_methods(self) -> None:
         """Test ChatHistoryInterface has required abstract methods."""
         # Check that ChatHistoryInterface is an abstract class
         assert issubclass(ChatHistoryInterface, ABC)
@@ -37,16 +35,12 @@ class TestInterfaces:
         assert hasattr(ChatHistoryInterface, "clear")
 
         # Verify they are abstract methods by checking if they have __isabstractmethod__
-        assert getattr(
-            ChatHistoryInterface.add_user_message, "__isabstractmethod__", False
-        )
-        assert getattr(
-            ChatHistoryInterface.add_ai_message, "__isabstractmethod__", False
-        )
+        assert getattr(ChatHistoryInterface.add_user_message, "__isabstractmethod__", False)
+        assert getattr(ChatHistoryInterface.add_ai_message, "__isabstractmethod__", False)
         assert getattr(ChatHistoryInterface.get_messages, "__isabstractmethod__", False)
         assert getattr(ChatHistoryInterface.clear, "__isabstractmethod__", False)
 
-    def test_inmemorychathistory_implements_chathistoryinterface(self):
+    def test_inmemorychathistory_implements_chathistoryinterface(self) -> None:
         """Test InMemoryChatHistory implements ChatHistoryInterface."""
         # Check that InMemoryChatHistory is a subclass of ChatHistoryInterface
         assert issubclass(InMemoryChatHistory, ChatHistoryInterface)
@@ -71,7 +65,7 @@ class TestInterfaces:
         chat_history.clear()
         assert len(chat_history) == 0
 
-    def test_langchainaiservice_implements_aiserviceinterface(self):
+    def test_langchainaiservice_implements_aiserviceinterface(self) -> None:
         """Test LangChainAIService implements AIServiceInterface."""
         # Check that LangChainAIService is a subclass of AIServiceInterface
         assert issubclass(LangChainAIService, AIServiceInterface)
@@ -101,7 +95,7 @@ class TestInterfaces:
             result = service.chat(messages)
             assert result == "test response"
 
-    def test_interface_method_signatures(self):
+    def test_interface_method_signatures(self) -> None:
         """Test interface methods have correct signatures."""
         # Check AIServiceInterface method signatures
         import inspect
@@ -154,7 +148,7 @@ class TestInterfaces:
         assert len(params) == 1  # only self
         assert sig.return_annotation is None
 
-    def test_concrete_classes_implement_all_interface_methods(self):
+    def test_concrete_classes_implement_all_interface_methods(self) -> None:
         """Test concrete classes implement all interface methods."""
         # Test LangChainAIService implements AIServiceInterface
         import os

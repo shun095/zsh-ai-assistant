@@ -3,8 +3,8 @@
 
 import sys
 import json
-from zsh_ai_assistant.config import AIConfig  # type: ignore[import-untyped]
-from zsh_ai_assistant.ai_service import LangChainAIService  # type: ignore  # noqa: E501
+from zsh_ai_assistant.config import AIConfig
+from zsh_ai_assistant.ai_service import LangChainAIService
 
 
 def generate_command(prompt: str, test_mode: bool = False) -> str:
@@ -30,8 +30,7 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     # Normal mode: require valid configuration
     if not config.is_valid:
         print(
-            "Error: Invalid AI configuration. Please set "
-            "OPENAI_API_KEY and OPENAI_BASE_URL",
+            "Error: Invalid AI configuration. Please set " "OPENAI_API_KEY and OPENAI_BASE_URL",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -42,7 +41,7 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     try:
         # Generate command
         command = service.generate_command(prompt)
-        return command.strip()  # type: ignore[no-any-return]
+        return command.strip()
     except Exception as e:
         print(f"Error generating command: {e}", file=sys.stderr)
         sys.exit(1)
@@ -74,8 +73,7 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
     config = AIConfig()
     if not config.is_valid:
         print(
-            "Error: Invalid AI configuration. Please set "
-            "OPENAI_API_KEY and OPENAI_BASE_URL",
+            "Error: Invalid AI configuration. Please set " "OPENAI_API_KEY and OPENAI_BASE_URL",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -86,7 +84,7 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
     try:
         # Generate response
         response = service.chat(messages)
-        return response.strip()  # type: ignore[no-any-return]
+        return response.strip()
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

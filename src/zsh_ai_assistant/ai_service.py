@@ -1,6 +1,6 @@
 """AI service implementation using LangChain."""
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, cast
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from .interfaces import AIServiceInterface
@@ -13,9 +13,7 @@ class LangChainAIService(AIServiceInterface):
     def __init__(self, config: AIConfig):
         """Initialize AI service with configuration."""
         if not config.is_valid:
-            raise ValueError(
-                "Invalid AI configuration: API key and base URL are required"
-            )
+            raise ValueError("Invalid AI configuration: API key and base URL are required")
 
         self.config = config
         self.client = ChatOpenAI(
@@ -40,7 +38,7 @@ class LangChainAIService(AIServiceInterface):
         human_message = HumanMessage(content=prompt)
 
         response = self.client.invoke([system_message, human_message])
-        return str(response.content)
+        return cast(str, response.content)
 
     def chat(self, messages: List[Dict[str, Any]]) -> str:
         """Generate a response from a chat history."""
@@ -71,4 +69,4 @@ class LangChainAIService(AIServiceInterface):
                 langchain_messages.append(AIMessage(content=content))
 
         response = self.client.invoke(langchain_messages)
-        return str(response.content)
+        return cast(str, response.content)

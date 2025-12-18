@@ -10,7 +10,9 @@ from zsh_ai_assistant.ai_service import LangChainAIService
 class TestLangChainAIService:
     """Test cases for LangChainAIService class."""
 
-    def test_generate_command_from_prompt(self, reset_env, mock_langchain_client):
+    def test_generate_command_from_prompt(  # type: ignore[no-untyped-def]
+        self, reset_env, mock_langchain_client
+    ) -> None:
         """Test generating command from natural language prompt."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -22,7 +24,7 @@ class TestLangChainAIService:
 
         assert result == "mock_response"
 
-    def test_chat_with_ai(self, reset_env, mock_langchain_client):
+    def test_chat_with_ai(self, reset_env, mock_langchain_client) -> None:  # type: ignore[no-untyped-def]
         """Test chatting with AI using message history."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -39,7 +41,7 @@ class TestLangChainAIService:
 
         assert result == "mock_response"
 
-    def test_invalid_configuration_raises_error(self, reset_env):
+    def test_invalid_configuration_raises_error(self, reset_env) -> None:  # type: ignore[no-untyped-def]
         """Test that invalid configuration raises an error."""
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
         # Missing API key
@@ -49,7 +51,9 @@ class TestLangChainAIService:
         with pytest.raises(ValueError, match="Invalid AI configuration"):
             LangChainAIService(config)
 
-    def test_generate_command_with_empty_prompt(self, reset_env, mock_langchain_client):
+    def test_generate_command_with_empty_prompt(  # type: ignore[no-untyped-def]
+        self, reset_env, mock_langchain_client
+    ) -> None:
         """Test generating command with empty prompt."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -61,7 +65,7 @@ class TestLangChainAIService:
 
         assert result == "mock_response"
 
-    def test_chat_with_empty_messages(self, reset_env, mock_langchain_client):
+    def test_chat_with_empty_messages(self, reset_env, mock_langchain_client) -> None:  # type: ignore[no-untyped-def]
         """Test chatting with AI when no messages are provided."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -73,7 +77,7 @@ class TestLangChainAIService:
 
         assert result == "mock_response"
 
-    def test_chat_with_system_message(self, reset_env, mock_langchain_client):
+    def test_chat_with_system_message(self, reset_env, mock_langchain_client) -> None:  # type: ignore[no-untyped-def]
         """Test chatting with AI when a system message is included."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -90,7 +94,7 @@ class TestLangChainAIService:
 
         assert result == "mock_response"
 
-    def test_service_initialization_with_valid_config(self, reset_env):
+    def test_service_initialization_with_valid_config(self, reset_env) -> None:  # type: ignore[no-untyped-def]
         """Test that service initializes correctly with valid config."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -115,7 +119,7 @@ class TestLangChainAIService:
                 max_tokens=1000,
             )
 
-    def test_service_initialization_with_custom_config(self, reset_env):
+    def test_service_initialization_with_custom_config(self, reset_env) -> None:  # type: ignore[no-untyped-def]
         """Test that service initializes correctly with custom config."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -140,9 +144,9 @@ class TestLangChainAIService:
                 max_tokens=2000,
             )
 
-    def test_generate_command_uses_correct_system_prompt(
+    def test_generate_command_uses_correct_system_prompt(  # type: ignore[no-untyped-def]
         self, reset_env, mock_langchain_client
-    ):
+    ) -> None:
         """Test that generate_command uses the correct system prompt."""
         os.environ["OPENAI_API_KEY"] = "test-api-key"
         os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
@@ -153,7 +157,7 @@ class TestLangChainAIService:
         # Mock the invoke method to capture the messages
         captured_messages = []
 
-        def capture_invoke(messages):
+        def capture_invoke(messages: list) -> Mock:
             captured_messages.extend(messages)
             mock_response = Mock()
             mock_response.content = "mock_command"
@@ -165,7 +169,5 @@ class TestLangChainAIService:
 
         # Verify the system message is correct
         assert len(captured_messages) == 2
-        assert captured_messages[0].content.startswith(
-            "You are a shell command generator."
-        )
+        assert captured_messages[0].content.startswith("You are a shell command generator.")
         assert captured_messages[1].content == "test prompt"

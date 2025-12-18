@@ -6,7 +6,7 @@ from zsh_ai_assistant.chat_history import InMemoryChatHistory
 class TestInMemoryChatHistory:
     """Test cases for InMemoryChatHistory class."""
 
-    def test_add_user_message_to_empty_chat_history(self):
+    def test_add_user_message_to_empty_chat_history(self) -> None:
         """Test adding a user message to an empty chat history."""
         chat_history = InMemoryChatHistory()
         chat_history.add_user_message("Hello, AI!")
@@ -17,7 +17,7 @@ class TestInMemoryChatHistory:
         assert messages[0]["role"] == "user"
         assert messages[0]["content"] == "Hello, AI!"
 
-    def test_add_ai_message_to_chat_history(self):
+    def test_add_ai_message_to_chat_history(self) -> None:
         """Test adding an AI message to the chat history."""
         chat_history = InMemoryChatHistory()
         chat_history.add_user_message("Hello, AI!")
@@ -30,7 +30,7 @@ class TestInMemoryChatHistory:
         assert messages[1]["role"] == "assistant"
         assert messages[1]["content"] == "Hello, user!"
 
-    def test_get_messages_returns_a_copy(self):
+    def test_get_messages_returns_a_copy(self) -> None:
         """Test that get_messages returns a copy, not the original list."""
         chat_history = InMemoryChatHistory()
         chat_history.add_user_message("Hello")
@@ -41,7 +41,7 @@ class TestInMemoryChatHistory:
         assert len(chat_history) == 1
         assert len(messages) == 2
 
-    def test_clear_chat_history(self):
+    def test_clear_chat_history(self) -> None:
         """Test clearing the chat history."""
         chat_history = InMemoryChatHistory()
         chat_history.add_user_message("Hello")
@@ -54,7 +54,7 @@ class TestInMemoryChatHistory:
         assert len(chat_history) == 0
         assert chat_history.get_messages() == []
 
-    def test_chat_history_length(self):
+    def test_chat_history_length(self) -> None:
         """Test chat history length property."""
         chat_history = InMemoryChatHistory()
 
@@ -66,7 +66,7 @@ class TestInMemoryChatHistory:
         chat_history.add_ai_message("Hi")
         assert len(chat_history) == 2
 
-    def test_chat_history_boolean_evaluation(self):
+    def test_chat_history_boolean_evaluation(self) -> None:
         """Test boolean evaluation of chat history."""
         chat_history = InMemoryChatHistory()
 
@@ -75,7 +75,7 @@ class TestInMemoryChatHistory:
         chat_history.add_user_message("Hello")
         assert chat_history  # Non-empty chat history is truthy
 
-    def test_chat_history_starting_empty(self):
+    def test_chat_history_starting_empty(self) -> None:
         """Test that chat history starts empty."""
         chat_history = InMemoryChatHistory()
 
@@ -83,7 +83,7 @@ class TestInMemoryChatHistory:
         assert chat_history.get_messages() == []
         assert not chat_history
 
-    def test_multiple_user_messages(self):
+    def test_multiple_user_messages(self) -> None:
         """Test adding multiple user messages."""
         chat_history = InMemoryChatHistory()
         chat_history.add_user_message("First message")
@@ -94,7 +94,7 @@ class TestInMemoryChatHistory:
         assert messages[0]["content"] == "First message"
         assert messages[1]["content"] == "Second message"
 
-    def test_multiple_ai_messages(self):
+    def test_multiple_ai_messages(self) -> None:
         """Test adding multiple AI messages."""
         chat_history = InMemoryChatHistory()
         chat_history.add_ai_message("First response")
@@ -105,7 +105,7 @@ class TestInMemoryChatHistory:
         assert messages[0]["content"] == "First response"
         assert messages[1]["content"] == "Second response"
 
-    def test_mixed_messages(self):
+    def test_mixed_messages(self) -> None:
         """Test adding a mix of user and AI messages."""
         chat_history = InMemoryChatHistory()
         chat_history.add_user_message("User 1")
