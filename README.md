@@ -296,3 +296,4 @@ For issues and questions, please open an issue on the [GitHub repository](https:
 - [LangChain](https://www.langchain.com/) - AI application development framework
 - [OpenAI](https://openai.com/) - AI models and API
 - [uv](https://github.com/astral/uv) - Fast Python package manager
+
