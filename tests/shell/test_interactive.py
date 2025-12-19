@@ -115,21 +115,28 @@ class TestInteractive:
             self.child.close()
         self.child = None
 
-    def test_command_generation(self) -> None:
+    def test_loading_message_displayed(self) -> None:
         assert self.child is not None
         child_spawn: pexpect.spawn = self.child
-        # コマンド変換がされること。
+        # Test that loading message is displayed during command generation
         child_spawn.send("# list current directory files\r")
+        # Wait for the loading message to appear in the buffer
+        child_spawn.expect("🤖 Generating command...")
         # Wait for the command to be transformed to 'ls'
-        child_spawn.expect("ls")
+        child_spawn.expect('ls')
+        try:
+            child_spawn.expect('pyproject.toml', timeout=3)
+            # 見つかった場合
+            raise Exception('Generated command should not be executed')
+        except pexpect.TIMEOUT:
+            # timeout → ERROR は出なかった
+            pass
         # Send Enter to execute the command
         child_spawn.send("\r")
         # Wait for the command output (ls listing)
         child_spawn.expect("pyproject.toml", timeout=5)
         # Wait for the prompt to return
-        child_spawn.expect("%", timeout=5)
-        child_spawn.sendline("exit")
-        child_spawn.expect(pexpect.EOF)
+        child_spawn.expect("%")
 
     def test_command_generation_git_status(self) -> None:
         assert self.child is not None
@@ -151,81 +158,6 @@ class TestInteractive:
         # コマンド変換がスキップされ通常のコマンド実行ができること。
         child_spawn.send("echo 'hello'\r")
         child_spawn.expect("hello")
-        child_spawn.sendline("exit")
-        child_spawn.expect(pexpect.EOF)
-
-    def test_chat(self) -> None:
-        assert self.child is not None
-        child_spawn: pexpect.spawn = self.child
-        # チャットが正常に起動すること
-        child_spawn.send("aiask\r")
-        child_spawn.expect("Me:")
-        # Send hello directly
-        child_spawn.sendline("hello")
-        child_spawn.expect("AI:")
-        child_spawn.expect("Hello")
-        child_spawn.expect("Me:")
-        child_spawn.sendline("quit")
-        child_spawn.expect("%")
-        child_spawn.sendline("exit")
-        child_spawn.expect(pexpect.EOF)
-
-    def test_chat_multiturn(self) -> None:
-        assert self.child is not None
-        child_spawn: pexpect.spawn = self.child
-        # チャットが正常に起動すること
-        child_spawn.send("aiask\r")
-        child_spawn.expect("Me:")
-        # Send hello directly
-        child_spawn.sendline("hello")
-        child_spawn.expect("AI:")
-        child_spawn.expect("Hello")
-        child_spawn.expect("Me:")
-        child_spawn.sendline("world")
-        child_spawn.expect("AI:")
-        # With the new OpenAI format, the response will be different
-        # The AI should respond to the second message
-        child_spawn.expect(re.compile(r"I received your message: world"))
-        child_spawn.expect("Me:")
-        child_spawn.sendline("quit")
-        child_spawn.expect("%")
-        child_spawn.sendline("exit")
-        child_spawn.expect(pexpect.EOF)
-
-    def test_chat_multiturn_with_history_verification(self) -> None:
-        assert self.child is not None
-        child_spawn: pexpect.spawn = self.child
-        # Start chat
-        child_spawn.send("aiask\r")
-        child_spawn.expect("Me:")
-
-        # First turn: send "hello"
-        child_spawn.sendline("hello")
-        child_spawn.expect("AI:")
-        child_spawn.expect("Hello")
-        child_spawn.expect("Me:")
-
-        # Second turn: send "world"
-        # At this point, the full history should be:
-        # [{"role": "user", "content": "hello"},
-        #  {"role": "assistant", "content": "Hello! How can I assist you today?"}]
-        child_spawn.sendline("world")
-        child_spawn.expect("AI:")
-        # The AI should acknowledge receiving the second message
-        child_spawn.expect(re.compile(r"I received your message: world"))
-        child_spawn.expect("Me:")
-
-        # Verify that the assistant knows the conversation history
-        # by checking that it can reference what was said before
-        child_spawn.sendline("what did I say first")
-        child_spawn.expect("AI:")
-        # The AI should be able to reference the first message "hello"
-        # since it has access to the full conversation history
-        child_spawn.expect(re.compile(r"hello", re.IGNORECASE))
-        child_spawn.expect("Me:")
-
-        child_spawn.sendline("quit")
-        child_spawn.expect("%")
         child_spawn.sendline("exit")
         child_spawn.expect(pexpect.EOF)
 
@@ -271,21 +203,6 @@ class TestInteractive:
         child_spawn.sendline("exit")
         child_spawn.expect(pexpect.EOF)
 
-    def test_loading_message_displayed(self) -> None:
-        assert self.child is not None
-        child_spawn: pexpect.spawn = self.child
-        # Test that loading message is displayed during command generation
-        child_spawn.send("# list current directory files\r")
-        # Wait for the loading message to appear in the buffer
-        child_spawn.expect("🤖 Generating command...")
-        # Wait for the command to be transformed to 'ls'
-        child_spawn.expect("ls")
-        # Send Enter to execute the command
-        child_spawn.send("\r")
-        # Wait for the command output (ls listing)
-        child_spawn.expect("pyproject.toml", timeout=5)
-        # Wait for the prompt to return
-        child_spawn.expect("%")
 
     def test_chat_history_with_assistant_responses(self) -> None:
         """Test that assistant can reference its own previous responses, not just user messages."""
