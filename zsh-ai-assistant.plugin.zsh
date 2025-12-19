@@ -126,10 +126,15 @@ zsh_ai_assistant_convert_comment_to_command() {
     local generated_command=""
     generated_command=$(uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$comment" 2>/dev/null)
     
-    if [[ -n "$generated_command" ]]; then
+    # Check the exit code of the uv command
+    local uv_exit_code=$?
+    
+    if [[ $uv_exit_code -eq 0 ]] && [[ -n "$generated_command" ]]; then
         echo "$generated_command"
         return 0
     else
+        # If uv failed, return an error message
+        echo "# Error: Failed to generate command"
         return 1
     fi
 }
