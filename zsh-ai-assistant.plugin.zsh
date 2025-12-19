@@ -26,11 +26,26 @@ if [[ -d "$ZSH_AI_ASSISTANT_DIR" ]]; then
     ZSH_AI_ASSISTANT_DIR="$(cd "$ZSH_AI_ASSISTANT_DIR" && pwd)"
 else
     # Fallback: try to find the plugin in common locations
-    if [[ -d "/home/vibeuser/.oh-my-zsh/custom/plugins/zsh-ai-assistant" ]]; then
-        ZSH_AI_ASSISTANT_DIR="/home/vibeuser/.oh-my-zsh/custom/plugins/zsh-ai-assistant"
-    elif [[ -d "/home/vibeuser/.oh-my-zsh/plugins/zsh-ai-assistant" ]]; then
-        ZSH_AI_ASSISTANT_DIR="/home/vibeuser/.oh-my-zsh/plugins/zsh-ai-assistant"
-    else
+    # Try to find plugin relative to home directory
+    local home_dir="${HOME:-}"
+    if [[ -n "$home_dir" ]]; then
+        if [[ -d "$home_dir/.oh-my-zsh/custom/plugins/zsh-ai-assistant" ]]; then
+            ZSH_AI_ASSISTANT_DIR="$home_dir/.oh-my-zsh/custom/plugins/zsh-ai-assistant"
+        elif [[ -d "$home_dir/.oh-my-zsh/plugins/zsh-ai-assistant" ]]; then
+            ZSH_AI_ASSISTANT_DIR="$home_dir/.oh-my-zsh/plugins/zsh-ai-assistant"
+        fi
+    fi
+    
+    # If still not found, try to find it using git
+    if [[ -z "$ZSH_AI_ASSISTANT_DIR" ]]; then
+        local git_root=""
+        git_root=$(git rev-parse --show-toplevel 2>/dev/null)
+        if [[ -n "$git_root" ]] && [[ -f "$git_root/zsh-ai-assistant.plugin.zsh" ]]; then
+            ZSH_AI_ASSISTANT_DIR="$git_root"
+        fi
+    fi
+    
+    if [[ -z "$ZSH_AI_ASSISTANT_DIR" ]]; then
         echo "Error: Could not determine plugin directory" >&2
         return 1
     fi
