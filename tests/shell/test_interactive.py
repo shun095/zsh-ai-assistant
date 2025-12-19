@@ -123,11 +123,11 @@ class TestInteractive:
         # Wait for the loading message to appear in the buffer
         child_spawn.expect("🤖 Generating command...")
         # Wait for the command to be transformed to 'ls'
-        child_spawn.expect('ls')
+        child_spawn.expect("ls")
         try:
-            child_spawn.expect('pyproject.toml', timeout=3)
+            child_spawn.expect("pyproject.toml", timeout=3)
             # 見つかった場合
-            raise Exception('Generated command should not be executed')
+            raise Exception("Generated command should not be executed")
         except pexpect.TIMEOUT:
             # timeout → ERROR は出なかった
             pass
@@ -202,7 +202,6 @@ class TestInteractive:
         child_spawn.expect("%")
         child_spawn.sendline("exit")
         child_spawn.expect(pexpect.EOF)
-
 
     def test_chat_history_with_assistant_responses(self) -> None:
         """Test that assistant can reference its own previous responses, not just user messages."""

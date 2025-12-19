@@ -74,7 +74,7 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
         # Get the last user message (expecting OpenAI format)
         user_messages = [msg for msg in messages if msg.get("role") == "user"]
         assistant_messages = [msg for msg in messages if msg.get("role") == "assistant"]
-        
+
         if not user_messages:
             return "No user messages found"
 

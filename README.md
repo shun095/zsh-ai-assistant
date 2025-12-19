@@ -151,7 +151,7 @@ zsh-ai-assistant/
 
 ```bash
 # Clone the repository
-cd /home/vibeuser/project/zsh-ai-assistant
+cd /path/to/zsh-ai-assistant
 
 # Create virtual environment
 uv venv

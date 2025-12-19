@@ -42,7 +42,7 @@ python tools/add_type_annotations.py
 pip install uv
 
 # Create virtual environment
-cd /home/vibeuser/project/zsh-ai-assistant
+cd /path/to/zsh-ai-assistant
 uv venv
 
 # Activate virtual environment
