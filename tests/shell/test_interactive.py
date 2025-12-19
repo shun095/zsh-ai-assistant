@@ -78,6 +78,7 @@ class TestInteractive:
         ohmyzsh_sh = "oh-my-zsh.sh"
 
         child_spawn.sendline(f"export ZSH={zsh_path}")
+        child_spawn.sendline("export KEEP_ZSHRC=yes")
         child_spawn.expect("%")
         if os.path.isfile(os.path.join(zsh_path, ohmyzsh_sh)):
             child_spawn.sendline(f"source {zsh_path}{ohmyzsh_sh}")
@@ -136,6 +137,29 @@ class TestInteractive:
         # Wait for the command output (ls listing)
         child_spawn.expect("pyproject.toml", timeout=5)
         # Wait for the prompt to return
+        child_spawn.expect("%")
+
+    def test_uv_error_on_command_generation(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+        # Mock uv command to assuming failure
+        child_spawn.send("uv () { return 1 }\r")
+        # Test that loading message is displayed during command generation
+        child_spawn.send("# list current directory files\r")
+        # Wait for the loading message to appear in the buffer
+        child_spawn.expect("🤖 Generating command...")
+        # Wait for the command to be transformed to 'error message'
+        child_spawn.expect("# Error: ")
+        # Send Enter to execute the command as comment out
+        child_spawn.send("\r")
+        try:
+            child_spawn.expect("🤖 Generating command...", timeout=3)
+            # 見つかった場合
+            raise Exception("Command generation should not be executed when `Error:`")
+        except pexpect.TIMEOUT:
+            # timeout → ERROR は出なかった
+            pass
+        # Wait for the prompt to return without regenerating command when error.
         child_spawn.expect("%")
 
     def test_error_on_command_generation(self) -> None:
