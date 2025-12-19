@@ -78,7 +78,7 @@ class TestInteractive:
         ohmyzsh_sh = "oh-my-zsh.sh"
 
         child_spawn.sendline(f"export ZSH={zsh_path}")
-        child_spawn.sendline(f"export KEEP_ZSHRC=yes")
+        child_spawn.sendline("export KEEP_ZSHRC=yes")
         child_spawn.expect("%")
         if os.path.isfile(os.path.join(zsh_path, ohmyzsh_sh)):
             child_spawn.sendline(f"source {zsh_path}{ohmyzsh_sh}")
