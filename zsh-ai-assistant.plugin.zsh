@@ -218,6 +218,11 @@ if [[ -n "$ZSH_VERSION" ]] && command -v zle >/dev/null 2>&1; then
             local comment_content="${trimmed_line#\#}"
             comment_content="${comment_content# }"  # Remove leading space
             if [[ -n "${comment_content%%[[:space:]]*}" ]]; then
+                # Check if this is an error message (should not be transformed again)
+                if [[ "$trimmed_line" =~ ^[[:space:]]*#.*Error: ]]; then
+                    # This is an error message, don't transform it
+                    return 1
+                fi
                 # Found a comment with content, return 0
                 return 0
             fi
