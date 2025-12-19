@@ -24,6 +24,10 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
             if key in prompt.lower():
                 return cmd
 
+        # Special case: simulate API error
+        if "return api error" in prompt.lower():
+            return "# Error: API request failed"
+
         # Default fallback for test mode
         return 'echo "hello world"'
 
@@ -43,7 +47,9 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
         command = service.generate_command(prompt)
         return command.strip()
     except Exception as e:
-        print(f"Error generating command: {e}", file=sys.stderr)
+        # Return error message as a commented line so zsh plugin knows not to execute it
+        error_message = f"# Error: {e}"
+        print(error_message)
         sys.exit(1)
 
 
@@ -74,7 +80,7 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
         # Get the last user message (expecting OpenAI format)
         user_messages = [msg for msg in messages if msg.get("role") == "user"]
         assistant_messages = [msg for msg in messages if msg.get("role") == "assistant"]
-        
+
         if not user_messages:
             return "No user messages found"
 

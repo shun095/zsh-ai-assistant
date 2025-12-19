@@ -123,11 +123,11 @@ class TestInteractive:
         # Wait for the loading message to appear in the buffer
         child_spawn.expect("🤖 Generating command...")
         # Wait for the command to be transformed to 'ls'
-        child_spawn.expect('ls')
+        child_spawn.expect("ls")
         try:
-            child_spawn.expect('pyproject.toml', timeout=3)
+            child_spawn.expect("pyproject.toml", timeout=3)
             # 見つかった場合
-            raise Exception('Generated command should not be executed')
+            raise Exception("Generated command should not be executed")
         except pexpect.TIMEOUT:
             # timeout → ERROR は出なかった
             pass
@@ -136,6 +136,27 @@ class TestInteractive:
         # Wait for the command output (ls listing)
         child_spawn.expect("pyproject.toml", timeout=5)
         # Wait for the prompt to return
+        child_spawn.expect("%")
+
+    def test_error_on_command_generation(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+        # Test that loading message is displayed during command generation
+        child_spawn.send("# return api error\r")
+        # Wait for the loading message to appear in the buffer
+        child_spawn.expect("🤖 Generating command...")
+        # Wait for the command to be transformed to 'error message'
+        child_spawn.expect("# Error: ")
+        # Send Enter to execute the command as comment out
+        child_spawn.send("\r")
+        try:
+            child_spawn.expect("🤖 Generating command...", timeout=3)
+            # 見つかった場合
+            raise Exception("Command generation should not be executed when `Error:`")
+        except pexpect.TIMEOUT:
+            # timeout → ERROR は出なかった
+            pass
+        # Wait for the prompt to return without regenerating command when error.
         child_spawn.expect("%")
 
     def test_command_generation_git_status(self) -> None:
@@ -202,7 +223,6 @@ class TestInteractive:
         child_spawn.expect("%")
         child_spawn.sendline("exit")
         child_spawn.expect(pexpect.EOF)
-
 
     def test_chat_history_with_assistant_responses(self) -> None:
         """Test that assistant can reference its own previous responses, not just user messages."""
