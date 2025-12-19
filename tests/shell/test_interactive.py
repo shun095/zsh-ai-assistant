@@ -183,8 +183,89 @@ class TestInteractive:
         child_spawn.expect("Me:")
         child_spawn.sendline("world")
         child_spawn.expect("AI:")
-        child_spawn.expect("I received")
+        # With the new OpenAI format, the response will be different
+        # The AI should respond to the second message
+        child_spawn.expect(re.compile(r"I received your message: world"))
         child_spawn.expect("Me:")
+        child_spawn.sendline("quit")
+        child_spawn.expect("%")
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)
+
+    def test_chat_multiturn_with_history_verification(self) -> None:
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+        # Start chat
+        child_spawn.send("aiask\r")
+        child_spawn.expect("Me:")
+
+        # First turn: send "hello"
+        child_spawn.sendline("hello")
+        child_spawn.expect("AI:")
+        child_spawn.expect("Hello")
+        child_spawn.expect("Me:")
+
+        # Second turn: send "world"
+        # At this point, the full history should be:
+        # [{"role": "user", "content": "hello"},
+        #  {"role": "assistant", "content": "Hello! How can I assist you today?"}]
+        child_spawn.sendline("world")
+        child_spawn.expect("AI:")
+        # The AI should acknowledge receiving the second message
+        child_spawn.expect(re.compile(r"I received your message: world"))
+        child_spawn.expect("Me:")
+
+        # Verify that the assistant knows the conversation history
+        # by checking that it can reference what was said before
+        child_spawn.sendline("what did I say first")
+        child_spawn.expect("AI:")
+        # The AI should be able to reference the first message "hello"
+        # since it has access to the full conversation history
+        child_spawn.expect(re.compile(r"hello", re.IGNORECASE))
+        child_spawn.expect("Me:")
+
+        child_spawn.sendline("quit")
+        child_spawn.expect("%")
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)
+
+    def test_chat_history_accumulation(self) -> None:
+        """Test that full conversation history is accumulated and sent to Python CLI."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Start chat
+        child_spawn.send("aiask\r")
+        child_spawn.expect("Me:")
+
+        # First turn: send "hello"
+        child_spawn.sendline("hello")
+        child_spawn.expect("AI:")
+        child_spawn.expect("Hello")
+        child_spawn.expect("Me:")
+
+        # Second turn: send "world"
+        # The full history should now include both user and assistant messages
+        child_spawn.sendline("world")
+        child_spawn.expect("AI:")
+        child_spawn.expect(re.compile(r"I received your message: world"))
+        child_spawn.expect("Me:")
+
+        # Third turn: verify the assistant can reference the full history
+        # by asking about what was said in the first turn
+        child_spawn.sendline("what did I say first")
+        child_spawn.expect("AI:")
+        # The response should contain "hello" from the first message
+        child_spawn.expect(re.compile(r"hello", re.IGNORECASE))
+        child_spawn.expect("Me:")
+
+        # Fourth turn: verify the assistant can reference the second message
+        child_spawn.sendline("what did I say second")
+        child_spawn.expect("AI:")
+        # The response should contain "world" from the second message
+        child_spawn.expect(re.compile(r"world", re.IGNORECASE))
+        child_spawn.expect("Me:")
+
         child_spawn.sendline("quit")
         child_spawn.expect("%")
         child_spawn.sendline("exit")
@@ -205,3 +286,50 @@ class TestInteractive:
         child_spawn.expect("pyproject.toml", timeout=5)
         # Wait for the prompt to return
         child_spawn.expect("%")
+
+    def test_chat_history_with_assistant_responses(self) -> None:
+        """Test that assistant can reference its own previous responses, not just user messages."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Start chat
+        child_spawn.send("aiask\r")
+        child_spawn.expect("Me:")
+
+        # First turn: send "hello"
+        child_spawn.sendline("hello")
+        child_spawn.expect("AI:")
+        child_spawn.expect("Hello")
+        child_spawn.expect("Me:")
+
+        # Second turn: send "world"
+        child_spawn.sendline("world")
+        child_spawn.expect("AI:")
+        child_spawn.expect(re.compile(r"I received your message: world"))
+        child_spawn.expect("Me:")
+
+        # Third turn: ask what the assistant said first
+        child_spawn.sendline("what did you say first")
+        child_spawn.expect("AI:")
+        # The AI should be able to reference its first response containing "Hello.*assist"
+        child_spawn.expect(re.compile(r"Hello.*assist", re.IGNORECASE))
+        child_spawn.expect("Me:")
+
+        # Fourth turn: ask what the assistant said second
+        child_spawn.sendline("what did you say second")
+        child_spawn.expect("AI:")
+        # The AI should be able to reference its second response containing "I received your message"
+        child_spawn.expect(re.compile(r"I received your message", re.IGNORECASE))
+        child_spawn.expect("Me:")
+
+        # Fifth turn: ask for a summary of what we said
+        child_spawn.sendline("tell me what we said")
+        child_spawn.expect("AI:")
+        # The AI should reference both user and assistant messages
+        child_spawn.expect(re.compile(r"You said.*I said", re.IGNORECASE))
+        child_spawn.expect("Me:")
+
+        child_spawn.sendline("quit")
+        child_spawn.expect("%")
+        child_spawn.sendline("exit")
+        child_spawn.expect(pexpect.EOF)

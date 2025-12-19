@@ -5,7 +5,8 @@ import sys
 import json
 from unittest.mock import Mock, patch, MagicMock
 import pytest
-from zsh_ai_assistant.cli import generate_command, chat, history_to_json, main
+from zsh_ai_assistant.cli import generate_command, chat, history_to_json, main, convert_to_openai_format
+from typing import List, Dict, Any
 
 
 class TestCLIGenerateCommand:
@@ -274,3 +275,84 @@ class TestCLIMain:
         # Check error output
         captured = capsys.readouterr()
         assert "Usage:" in captured.err
+
+
+class TestMessageConversion:
+    """Test cases for message format conversion."""
+
+    def test_convert_to_openai_format_with_user_message(self) -> None:
+        """Test conversion of {"user": "content"} to OpenAI format."""
+        messages = [{"user": "Hello"}]
+        result = convert_to_openai_format(messages)
+        expected = [{"role": "user", "content": "Hello"}]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_assistant_message(self) -> None:
+        """Test conversion of {"assistant": "content"} to OpenAI format."""
+        messages = [{"assistant": "Hi there!"}]
+        result = convert_to_openai_format(messages)
+        expected = [{"role": "assistant", "content": "Hi there!"}]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_system_message(self) -> None:
+        """Test conversion of {"system": "content"} to OpenAI format."""
+        messages = [{"system": "You are a helpful assistant."}]
+        result = convert_to_openai_format(messages)
+        expected = [{"role": "system", "content": "You are a helpful assistant."}]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_mixed_messages(self) -> None:
+        """Test conversion of mixed message formats."""
+        messages = [{"user": "Hello"}, {"assistant": "Hi there!"}, {"user": "How are you?"}]
+        result = convert_to_openai_format(messages)
+        expected = [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there!"},
+            {"role": "user", "content": "How are you?"},
+        ]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_openai_format(self) -> None:
+        """Test that OpenAI format messages pass through unchanged."""
+        messages = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi there!"}]
+        result = convert_to_openai_format(messages)
+        expected = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi there!"}]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_mixed_formats(self) -> None:
+        """Test conversion with a mix of old and new formats."""
+        messages = [{"user": "Hello"}, {"role": "assistant", "content": "Hi there!"}, {"user": "How are you?"}]
+        result = convert_to_openai_format(messages)
+        expected = [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there!"},
+            {"role": "user", "content": "How are you?"},
+        ]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_unknown_format(self) -> None:
+        """Test that unknown message formats are preserved."""
+        messages = [{"unknown": "content"}]
+        result = convert_to_openai_format(messages)
+        expected = [{"unknown": "content"}]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_empty_list(self) -> None:
+        """Test conversion with empty message list."""
+        messages: List[Dict[str, Any]] = []
+        result = convert_to_openai_format(messages)
+        expected: List[Dict[str, Any]] = []
+        assert result == expected
+
+    def test_convert_to_openai_format_preserves_additional_fields(self) -> None:
+        """Test that additional fields in OpenAI format are preserved."""
+        messages: List[Dict[str, Any]] = [
+            {"role": "user", "content": "Hello", "name": "user1"},
+            {"role": "assistant", "content": "Hi there!", "tool_calls": []},
+        ]
+        result = convert_to_openai_format(messages)
+        expected = [
+            {"role": "user", "content": "Hello", "name": "user1"},
+            {"role": "assistant", "content": "Hi there!", "tool_calls": []},
+        ]
+        assert result == expected
