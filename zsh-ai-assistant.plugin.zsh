@@ -155,6 +155,9 @@ zsh_ai_assistant_transform_command() {
 # AI chat function
 zsh_ai_assistant_chat() {
     # Continuous chat loop
+    # Use OpenAI API compatible JSON format throughout
+    # Initialize chat history as JSON array
+    local chat_history='[]'
     while true; do
         printf "Me: "
         
@@ -168,23 +171,30 @@ zsh_ai_assistant_chat() {
             break
         fi
         
-        # Convert user input to JSON format for the Python CLI
+        # Add user message to chat history using jq
+        # This maintains OpenAI API compatible format: {"role": "user", "content": "message"}
+        chat_history=$(jq --arg role "user" --arg content "$user_input" '. + [$ARGS.named]' <<< "$chat_history")
+        
         # Add --test flag if ZSH_AI_ASSISTANT_TEST_MODE is set
         local test_flag=""
         if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
             test_flag="--test"
         fi
         
-        # Use printf to avoid echo issues
-        local chat_history_json=""
-        chat_history_json=$(printf "user:%s" "$user_input" | uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag history-to-json 2>/dev/null)
-        
         # Call Python backend for AI response using uv run
+        # Pass the complete chat history in OpenAI format
         local ai_response=""
-        ai_response=$(printf "%s" "$chat_history_json" | uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag chat 2>/dev/null)
+        ai_response=$(printf "%s" "$chat_history" | uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag chat 2>/dev/null)
         
         if [[ -n "$ai_response" ]]; then
-            echo "AI: $ai_response"
+            # Handle multi-line AI responses properly
+            # Use echo with -e to interpret escape sequences
+            echo -e "AI: $ai_response"
+            
+            # Add AI response to chat history using jq
+            # Maintain OpenAI API format: {"role": "assistant", "content": "response"}
+            # Use jq to properly handle multi-line content
+            chat_history=$(jq --arg role "assistant" --arg content "$ai_response" '. + [$ARGS.named]' <<< "$chat_history")
         fi
     done
 }

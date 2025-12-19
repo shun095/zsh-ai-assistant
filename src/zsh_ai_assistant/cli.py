@@ -3,6 +3,7 @@
 
 import sys
 import json
+from typing import List, Dict, Any
 from zsh_ai_assistant.config import AIConfig
 from zsh_ai_assistant.ai_service import LangChainAIService
 
@@ -47,7 +48,16 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
 
 
 def chat(messages_json: str, test_mode: bool = False) -> str:
-    """Generate a response from chat history."""
+    """Generate a response from chat history.
+
+    Expected input format (OpenAI API compatible):
+    [
+        {"role": "user", "content": "message"},
+        {"role": "assistant", "content": "response"}
+    ]
+
+    Returns response content only (not wrapped in JSON).
+    """
     if not messages_json:
         print("Error: No chat history provided", file=sys.stderr)
         sys.exit(1)
@@ -60,13 +70,70 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
 
     # Check if we're in test mode (no API key required)
     if test_mode:
-        # Simple test mode: return a generic response
-        last_message = messages[-1] if messages else {"content": "hello"}
-        content = last_message.get("content", "your message")
-        # If the content is 'hello', return a friendly greeting
-        if content.lower() == "hello":
-            return "Hello! How can I assist you today? 😊"
-        return f"I received: {content}"
+        # Test mode: simulate AI responses based on content
+        # Get the last user message (expecting OpenAI format)
+        user_messages = [msg for msg in messages if msg.get("role") == "user"]
+        assistant_messages = [msg for msg in messages if msg.get("role") == "assistant"]
+        
+        if not user_messages:
+            return "No user messages found"
+
+        last_user_message = user_messages[-1].get("content", "")
+
+        # Simulate AI responses
+        if last_user_message.lower() == "hello":
+            # Return just the greeting text (no JSON wrapper)
+            # This simulates a real AI response
+            return "Hello! How can I assist you today?"
+        elif "what did i say first" in last_user_message.lower():
+            # Check if there are previous user messages in the conversation history
+            if len(user_messages) >= 2:
+                # Return the first message content
+                first_message = user_messages[0].get("content", "")
+                return f"You said '{first_message}' first"
+            else:
+                return "This is your first message."
+        elif "what did i say second" in last_user_message.lower():
+            # Check if there are at least 3 user messages in the conversation history
+            if len(user_messages) >= 3:
+                # Return the second message content
+                second_message = user_messages[1].get("content", "")
+                return f"You said '{second_message}' second"
+            elif len(user_messages) >= 2:
+                return "This is your second message."
+            else:
+                return "This is your first message."
+        elif "what did you say first" in last_user_message.lower():
+            # Check if there are previous assistant messages in the conversation history
+            if len(assistant_messages) >= 1:
+                # Return the first assistant message content
+                first_assistant_message = assistant_messages[0].get("content", "")
+                return f"I said '{first_assistant_message}' first"
+            else:
+                return "This is my first response."
+        elif "what did you say second" in last_user_message.lower():
+            # Check if there are at least 2 assistant messages in the conversation history
+            if len(assistant_messages) >= 2:
+                # Return the second assistant message content
+                second_assistant_message = assistant_messages[1].get("content", "")
+                return f"I said '{second_assistant_message}' second"
+            elif len(assistant_messages) >= 1:
+                return "This is my second response."
+            else:
+                return "This is my first response."
+        elif last_user_message.lower() == "world":
+            # For 'world' message, return a simple acknowledgment
+            return f"I received your message: {last_user_message}"
+        elif "tell me what we said" in last_user_message.lower():
+            # Provide a summary of the conversation
+            if user_messages and assistant_messages:
+                return f"You said: {user_messages[0].get('content', '')}. I said: {assistant_messages[0].get('content', '')}"
+            else:
+                return "We haven't said much yet."
+        else:
+            # For other messages, return a simple acknowledgment
+            # The conversation history is managed by zsh using jq
+            return f"I received your message: {last_user_message}"
 
     # Load configuration
     config = AIConfig()
@@ -81,7 +148,7 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
     service = LangChainAIService(config)
 
     try:
-        # Generate response
+        # Generate response using OpenAI format
         response = service.chat(messages)
         return response.strip()
     except Exception as e:
@@ -90,20 +157,47 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
 
 
 def history_to_json(history_lines: str) -> str:
-    """Convert chat history format to JSON format."""
-    # Read chat history from stdin
-    lines = history_lines.strip().split("\n")
+    """Convert chat history format to OpenAI API compatible JSON format.
 
-    # Convert chat history to messages format
+    Input format: "user:message" or "assistant:message"
+    Output format: [{"role": "user", "content": "message"}]
+    """
+    # Read chat history from stdin
+    # Handle both actual newlines and the literal string "$'\n'" that zsh might pass
+    lines = history_lines.replace("$'\\n'", "").strip().split("\n")
+
+    # Convert chat history to OpenAI API format
     messages = []
     for line in lines:
         line = line.strip()
         if line and ":" in line:
             role, content = line.split(":", 1)
+            # Use OpenAI API format: {"role": "user/assistant", "content": "message"}
             messages.append({"role": role, "content": content})
 
     # Output JSON
     return json.dumps(messages)
+
+
+def convert_to_openai_format(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Convert messages from {"user": "content"} format to OpenAI API format {"role": "user", "content": "content"}."""
+    openai_messages = []
+    for msg in messages:
+        # Check if message is already in OpenAI format
+        if "role" in msg and "content" in msg:
+            openai_messages.append(msg)
+        # Convert from {"user": "content"} format
+        elif "user" in msg:
+            openai_messages.append({"role": "user", "content": msg["user"]})
+        elif "assistant" in msg:
+            openai_messages.append({"role": "assistant", "content": msg["assistant"]})
+        elif "system" in msg:
+            openai_messages.append({"role": "system", "content": msg["system"]})
+        else:
+            # If format is unknown, keep as-is
+            openai_messages.append(msg)
+
+    return openai_messages
 
 
 def main() -> None:
