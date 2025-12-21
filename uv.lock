@@ -1714,6 +1714,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "langchain" },
+    { name = "langchain-core" },
     { name = "langchain-openai" },
     { name = "openai" },
     { name = "pexpect" },
@@ -1740,6 +1741,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "langchain", specifier = ">=0.2.17" },
+    { name = "langchain-core", specifier = ">=0.2.0" },
     { name = "langchain-openai", specifier = ">=1.1.3" },
     { name = "langchain-openai", marker = "extra == 'test'", specifier = ">=1.0.0" },
     { name = "openai", specifier = ">=2.2.0" },

@@ -1,0 +1,69 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+__pycache__/
+.Python
+dist/
+build/
+egg-info/
+.eggs/
+lib/
+lib64/
+parts/
+wheel-\*.whl
+*.spec
+
+# Virtual environment
+.venv/
+shell/
+
+# IDE and Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+.DS_Store
+
+# Test and coverage
+.coverage
+.htmlcov/
+.tox/
+.cover/
+coverage.xml
+*.cover
+.hypothesis/
+pytest_cache/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.old
+*.swp
+
+# Environment variables
+.env
+.env.local
+.pytest_cache/
+
+# Zsh plugin specific
+*.zcompdump
+
+# Documentation and notes
+NOTES*
+TEMP*
+DRAFT*
+TODO*
+FINAL_SUMMARY*
+COMPLETION_SUMMARY*
+PROJECT_NOTES*
+
+# Build artifacts
+*.egg-info/
+*.dist-info/
+
+# OS generated files
+.DS_Store
+Thumbs.db
