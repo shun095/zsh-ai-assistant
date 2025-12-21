@@ -100,7 +100,9 @@ class TestInteractive:
 
         script_path = Path(__file__).parent.parent.parent / "zsh-ai-assistant.plugin.zsh"
         script_path = script_path.resolve()
+        child_spawn.sendline(f"cd /tmp")
         child_spawn.sendline(f"source {script_path}")
+        child_spawn.sendline(f"cd -")
         child_spawn.expect("%")
         child_spawn.sendline('echo "=== SETUP END ==="')
         child_spawn.expect("%")
@@ -294,3 +296,52 @@ class TestInteractive:
         child_spawn.expect("%")
         child_spawn.sendline("exit")
         child_spawn.expect(pexpect.EOF)
+
+    def test_command_generation_from_random_directory(self) -> None:
+        """Test normal case of command generation from a random directory."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Change to a different directory (e.g., /tmp)
+        child_spawn.sendline("cd /tmp")
+        child_spawn.expect("%")
+
+        # Verify we're in /tmp
+        child_spawn.sendline("pwd")
+        child_spawn.expect("/tmp")
+        child_spawn.expect("%")
+
+        # Test command generation from /tmp directory
+        child_spawn.send("# list files in current directory\r")
+        # Wait for the loading message
+        child_spawn.expect("🤖 Generating command...")
+        # Wait for the command to be transformed to 'ls'
+        child_spawn.expect("ls")
+        # Send Enter to execute the command
+        child_spawn.send("\r")
+        # Wait for the prompt to return
+        child_spawn.expect("%")
+
+    def test_chat_from_random_directory(self) -> None:
+        """Test normal case of chat (aiask) from a random directory."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Change to a different directory (e.g., home directory)
+        child_spawn.sendline("cd ~")
+        child_spawn.expect("%")
+
+        # Start chat from home directory
+        child_spawn.send("aiask\r")
+        child_spawn.expect("Me:")
+
+        # Send a message
+        child_spawn.sendline("Hello")
+        child_spawn.expect("AI:")
+        # The AI should respond
+        child_spawn.expect(re.compile(r"Hello", re.IGNORECASE))
+        child_spawn.expect("Me:")
+
+        # Send another message
+        child_spawn.sendline("quit")
+        child_spawn.expect("%")

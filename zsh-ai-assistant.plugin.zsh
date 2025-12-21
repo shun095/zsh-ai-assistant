@@ -129,7 +129,20 @@ zsh_ai_assistant_convert_comment_to_command() {
     local stdout_file=$(mktemp)
     local stderr_file=$(mktemp)
     
+    # Save current directory to restore later
+    local original_dir=$(pwd)
+    
+    # Change to plugin directory to run uv commands, then restore original directory
+    # This ensures uv can find the virtual environment and dependencies
+    cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
+        echo "# Error: Could not change to plugin directory" >&2
+        return 1
+    }
+    
     uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$comment" > "$stdout_file" 2> "$stderr_file"
+    
+    # Restore original directory
+    cd "$original_dir" >/dev/null 2>&1 || true
     
     # Check the exit code of the uv command
     local uv_exit_code=$?
@@ -224,7 +237,20 @@ zsh_ai_assistant_chat() {
         # Call Python backend for AI response using uv run
         # Pass the complete chat history in OpenAI format
         local ai_response=""
+        
+        # Save current directory to restore later
+        local original_dir=$(pwd)
+        
+        # Change to plugin directory to run uv commands, then restore original directory
+        cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
+            echo "# Error: Could not change to plugin directory" >&2
+            return 1
+        }
+        
         ai_response=$(printf "%s" "$chat_history" | uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag chat 2>/dev/null)
+        
+        # Restore original directory
+        cd "$original_dir" >/dev/null 2>&1 || true
         
         if [[ -n "$ai_response" ]]; then
             # Handle multi-line AI responses properly

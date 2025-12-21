@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 """CLI utilities for zsh-ai-assistant."""
 
-import sys
 import json
+import os
+import sys
 from typing import List, Dict, Any
+
+# Add the src directory to Python path to ensure module can be imported
+# This allows the script to be run from any directory
+_src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
+
 from zsh_ai_assistant.config import AIConfig
 from zsh_ai_assistant.ai_service import LangChainAIService
 
