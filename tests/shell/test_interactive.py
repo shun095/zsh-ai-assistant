@@ -100,9 +100,9 @@ class TestInteractive:
 
         script_path = Path(__file__).parent.parent.parent / "zsh-ai-assistant.plugin.zsh"
         script_path = script_path.resolve()
-        child_spawn.sendline(f"cd /tmp")
+        child_spawn.sendline("cd /tmp")
         child_spawn.sendline(f"source {script_path}")
-        child_spawn.sendline(f"cd -")
+        child_spawn.sendline("cd -")
         child_spawn.expect("%")
         child_spawn.sendline('echo "=== SETUP END ==="')
         child_spawn.expect("%")

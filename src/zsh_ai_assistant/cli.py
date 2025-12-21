@@ -12,8 +12,9 @@ _src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _src_dir not in sys.path:
     sys.path.insert(0, _src_dir)
 
-from zsh_ai_assistant.config import AIConfig
-from zsh_ai_assistant.ai_service import LangChainAIService
+# Import after path manipulation
+from zsh_ai_assistant.config import AIConfig  # noqa: E402
+from zsh_ai_assistant.ai_service import LangChainAIService  # noqa: E402
 
 
 def generate_command(prompt: str, test_mode: bool = False) -> str:
