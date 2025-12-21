@@ -1,8 +1,7 @@
 """AI service implementation using LangChain."""
 
-from typing import List, Dict, Any, cast, Optional, Callable
+from typing import List, Dict, Any, cast, Optional, Callable, Union
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from langchain_core.language_models import BaseLanguageModel
 from langchain_openai import ChatOpenAI
 from .interfaces import AIServiceInterface
 from .config import AIConfig
@@ -38,74 +37,80 @@ class MockClient:
 
         # Check if this is a command generation request (has command generator system message)
         is_command_generation = False
-        if messages and hasattr(messages[0], 'content') and messages[0].content:
+        if messages and hasattr(messages[0], "content") and messages[0].content:
             system_content = messages[0].content.lower()
             if "shell command generator" in system_content:
                 is_command_generation = True
 
         if is_command_generation:
             # Command generation mode - check the human message for patterns
-            if messages and len(messages) > 1 and hasattr(messages[-1], 'content') and messages[-1].content:
+            if messages and len(messages) > 1 and hasattr(messages[-1], "content") and messages[-1].content:
                 content = messages[-1].content.lower()
                 if "git status" in content or "check git" in content:
-                    return type('obj', (object,), {'content': 'git status'})()
+                    return type("obj", (object,), {"content": "git status"})()
                 elif "list" in content or "files" in content:
-                    return type('obj', (object,), {'content': 'ls'})()
+                    return type("obj", (object,), {"content": "ls"})()
                 elif "return api error" in content:
                     raise Exception("API request failed")
                 else:
-                    return type('obj', (object,), {'content': 'echo "hello world"'})()
+                    return type("obj", (object,), {"content": 'echo "hello world"'})()
         else:
             # Chat mode - analyze the full chat history for context
-            if messages and hasattr(messages[-1], 'content') and messages[-1].content:
+            if messages and hasattr(messages[-1], "content") and messages[-1].content:
                 content = messages[-1].content.lower()
-                
+
                 # Extract all user and assistant messages from history
                 user_messages = []
                 assistant_messages = []
                 for msg in messages:
                     # Check if this is a HumanMessage (user message)
-                    if hasattr(msg, '__class__') and msg.__class__.__name__ == 'HumanMessage':
-                        if hasattr(msg, 'content') and msg.content:
+                    if hasattr(msg, "__class__") and msg.__class__.__name__ == "HumanMessage":
+                        if hasattr(msg, "content") and msg.content:
                             user_messages.append(msg.content)
                     # Check if this is an AIMessage (assistant message)
-                    elif hasattr(msg, '__class__') and msg.__class__.__name__ == 'AIMessage':
-                        if hasattr(msg, 'content') and msg.content:
+                    elif hasattr(msg, "__class__") and msg.__class__.__name__ == "AIMessage":
+                        if hasattr(msg, "content") and msg.content:
                             assistant_messages.append(msg.content)
-                
+
                 # Handle specific questions about chat history
                 if "what did i say first" in content:
                     if len(user_messages) >= 1:
-                        return type('obj', (object,), {'content': f'You said: {user_messages[0]}'})()
-                    return type('obj', (object,), {'content': 'I received your message: what did i say first'})()
+                        return type("obj", (object,), {"content": f"You said: {user_messages[0]}"})()
+                    return type("obj", (object,), {"content": "I received your message: what did i say first"})()
                 elif "what did i say second" in content:
                     if len(user_messages) >= 2:
-                        return type('obj', (object,), {'content': f'You said: {user_messages[1]}'})()
-                    return type('obj', (object,), {'content': 'I received your message: what did i say second'})()
+                        return type("obj", (object,), {"content": f"You said: {user_messages[1]}"})()
+                    return type("obj", (object,), {"content": "I received your message: what did i say second"})()
                 elif "what did you say first" in content:
                     if len(assistant_messages) >= 1:
                         # Special handling for the first assistant message "Hello"
                         # Return a response that matches the regex pattern "Hello.*assist"
                         if assistant_messages[0] == "Hello":
-                            return type('obj', (object,), {'content': 'Hello, this is my first response as your AI assistant'})()
-                        return type('obj', (object,), {'content': f'I said: {assistant_messages[0]}'})()
-                    return type('obj', (object,), {'content': 'I received your message: what did you say first'})()
+                            return type(
+                                "obj", (object,), {"content": "Hello, this is my first response as your AI assistant"}
+                            )()
+                        return type("obj", (object,), {"content": f"I said: {assistant_messages[0]}"})()
+                    return type("obj", (object,), {"content": "I received your message: what did you say first"})()
                 elif "what did you say second" in content:
                     if len(assistant_messages) >= 2:
-                        return type('obj', (object,), {'content': f'I said: {assistant_messages[1]}'})()
-                    return type('obj', (object,), {'content': 'I received your message: what did you say second'})()
+                        return type("obj", (object,), {"content": f"I said: {assistant_messages[1]}"})()
+                    return type("obj", (object,), {"content": "I received your message: what did you say second"})()
                 elif "hello" in content:
-                    return type('obj', (object,), {'content': 'Hello'})()
+                    return type("obj", (object,), {"content": "Hello"})()
                 elif "world" in content:
-                    return type('obj', (object,), {'content': 'I received your message: world'})()
+                    return type("obj", (object,), {"content": "I received your message: world"})()
                 elif "tell me what we said" in content:
                     # Return a response that matches the regex pattern "You said.*I said"
-                    return type('obj', (object,), {'content': 'You said hello and world, and I said Hello and I received your message: world'})()
+                    return type(
+                        "obj",
+                        (object,),
+                        {"content": "You said hello and world, and I said Hello and I received your message: world"},
+                    )()
                 else:
-                    return type('obj', (object,), {'content': 'I received your message: ' + content})()
-        
+                    return type("obj", (object,), {"content": "I received your message: " + content})()
+
         # Fallback if no messages or no content
-        return type('obj', (object,), {'content': 'echo "hello world"'})()
+        return type("obj", (object,), {"content": 'echo "hello world"'})()
 
     def reset(self) -> None:
         """Reset the mock client state."""
@@ -125,7 +130,8 @@ class LangChainAIService(AIServiceInterface):
         """
         self.config = config
         self.test_mode = test_mode
-        
+        self.client: Union[MockClient, ChatOpenAI]
+
         if test_mode:
             # Use mock client for testing
             self.client = MockClient()
@@ -133,7 +139,7 @@ class LangChainAIService(AIServiceInterface):
             # Use real ChatOpenAI client
             if not config.is_valid:
                 raise ValueError("Invalid AI configuration: API key and base URL are required")
-            
+
             self.client = ChatOpenAI(
                 api_key=config.api_key,  # type: ignore[arg-type]
                 base_url=config.base_url,
