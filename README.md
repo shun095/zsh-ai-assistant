@@ -1,5 +1,8 @@
 # zsh-ai-assistant
 
+![Test Coverage](https://github.com/shun095/zsh-ai-assistant/actions/workflows/tests.yml/badge.svg)
+![Lint Status](https://github.com/shun095/zsh-ai-assistant/actions/workflows/lint.yml/badge.svg)
+
 A zsh plugin that integrates AI assistance directly into your shell, allowing you to:
 
 1. **Convert comments to commands**: Type a comment starting with `#` and press Enter to have it converted to the appropriate shell command
@@ -245,7 +248,9 @@ The zsh frontend that:
 
 ### Test Coverage
 
-The project maintains **96.4% test coverage** for Python code, ensuring reliability and maintainability.
+The project maintains **96.4% test coverage** for Python code, ensuring reliability and maintainability. Coverage is automatically tracked and reported through GitHub Actions.
+
+![Coverage Badge](https://github.com/shun095/zsh-ai-assistant/actions/workflows/tests.yml/badge.svg)
 
 ### Test Structure
 
