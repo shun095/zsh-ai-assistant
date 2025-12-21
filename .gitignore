@@ -27,6 +27,7 @@ shell/
 .DS_Store
 
 # Test and coverage
+.coverage
 .htmlcov/
 .tox/
 .cover/
