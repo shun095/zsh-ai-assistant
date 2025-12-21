@@ -124,17 +124,37 @@ zsh_ai_assistant_convert_comment_to_command() {
     fi
     
     local generated_command=""
-    generated_command=$(uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$comment" 2>/dev/null)
+    local stderr_output=""
+    # Use temporary files to capture stdout and stderr separately
+    local stdout_file=$(mktemp)
+    local stderr_file=$(mktemp)
+    
+    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$comment" > "$stdout_file" 2> "$stderr_file"
     
     # Check the exit code of the uv command
     local uv_exit_code=$?
+    
+    # Read the captured output
+    if [[ -f "$stdout_file" ]]; then
+        generated_command=$(cat "$stdout_file")
+    fi
+    if [[ -f "$stderr_file" ]]; then
+        stderr_output=$(cat "$stderr_file")
+    fi
+    
+    # Clean up temporary files
+    rm -f "$stdout_file" "$stderr_file"
     
     if [[ $uv_exit_code -eq 0 ]] && [[ -n "$generated_command" ]]; then
         echo "$generated_command"
         return 0
     else
-        # If uv failed, return an error message
-        echo "# Error: Failed to generate command"
+        # If uv failed, return the captured stderr in the error message
+        if [[ -n "$stderr_output" ]]; then
+            echo "# Error: $stderr_output"
+        else
+            echo "# Error: Failed to generate command"
+        fi
         return 1
     fi
 }

@@ -143,13 +143,13 @@ class TestInteractive:
         assert self.child is not None
         child_spawn: pexpect.spawn = self.child
         # Mock uv command to assuming failure
-        child_spawn.send("uv () { return 1 }\r")
+        child_spawn.send('uv () { echo "failed reason message" >&2; return 1 }\r')
         # Test that loading message is displayed during command generation
         child_spawn.send("# list current directory files\r")
         # Wait for the loading message to appear in the buffer
         child_spawn.expect("🤖 Generating command...")
         # Wait for the command to be transformed to 'error message'
-        child_spawn.expect("# Error: ")
+        child_spawn.expect("# Error: failed reason message")
         # Send Enter to execute the command as comment out
         child_spawn.send("\r")
         try:
