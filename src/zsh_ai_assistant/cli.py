@@ -130,36 +130,40 @@ def main() -> None:
     if test_mode:
         sys.argv.remove("--test")
 
-    if len(sys.argv) > 1 and sys.argv[1] == "command":
-        # Command generation mode
-        if len(sys.argv) > 2:
-            prompt = sys.argv[2]
+    try:
+        if len(sys.argv) > 1 and sys.argv[1] == "command":
+            # Command generation mode
+            if len(sys.argv) > 2:
+                prompt = sys.argv[2]
+            else:
+                prompt = sys.stdin.read().strip()
+
+            result = generate_command(prompt, test_mode)
+            print(result)
+
+        elif len(sys.argv) > 1 and sys.argv[1] == "chat":
+            # Chat mode
+            chat_history_json = sys.stdin.read().strip()
+            result = chat(chat_history_json, test_mode)
+            print(result)
+
+        elif len(sys.argv) > 1 and sys.argv[1] == "history-to-json":
+            # History to JSON mode
+            history_lines = sys.stdin.read().strip()
+            result = history_to_json(history_lines)
+            print(result)
+
         else:
-            prompt = sys.stdin.read().strip()
-
-        result = generate_command(prompt, test_mode)
-        print(result)
-
-    elif len(sys.argv) > 1 and sys.argv[1] == "chat":
-        # Chat mode
-        chat_history_json = sys.stdin.read().strip()
-        result = chat(chat_history_json, test_mode)
-        print(result)
-
-    elif len(sys.argv) > 1 and sys.argv[1] == "history-to-json":
-        # History to JSON mode
-        history_lines = sys.stdin.read().strip()
-        result = history_to_json(history_lines)
-        print(result)
-
-    else:
-        print("Usage:", file=sys.stderr)
-        print("  command <prompt> - Generate command from prompt", file=sys.stderr)
-        print("  chat - Chat with AI (reads JSON from stdin)", file=sys.stderr)
-        print(
-            "  history-to-json - Convert history to JSON " "(reads from stdin)",
-            file=sys.stderr,
-        )
+            print("Usage:", file=sys.stderr)
+            print("  command <prompt> - Generate command from prompt", file=sys.stderr)
+            print("  chat - Chat with AI (reads JSON from stdin)", file=sys.stderr)
+            print(
+                "  history-to-json - Convert history to JSON " "(reads from stdin)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
         sys.exit(1)
 
 

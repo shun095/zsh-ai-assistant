@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+from io import StringIO
 from unittest.mock import Mock, patch, MagicMock
 import pytest
 from zsh_ai_assistant.cli import generate_command, chat, history_to_json, main, convert_to_openai_format
@@ -276,6 +277,35 @@ class TestCLIMain:
         captured = capsys.readouterr()
         assert "Usage:" in captured.err
 
+    def test_main_with_exception_handling(self, capsys) -> None:  # type: ignore[no-untyped-def]
+        """Test main function exception handling."""
+        with patch.object(sys, "argv", ["cli", "command"]):
+            with patch("sys.stdin", StringIO("")):
+                with patch("zsh_ai_assistant.cli.generate_command") as mock_generate:
+                    mock_generate.side_effect = Exception("Test error")
+                    with pytest.raises(SystemExit) as exc_info:
+                        main()
+
+        # Check error output
+        captured = capsys.readouterr()
+        assert "Error:" in captured.out
+        assert "Test error" in captured.out
+        assert exc_info.value.code == 1
+
+    def test_main_with_test_mode_flag(self, capsys) -> None:  # type: ignore[no-untyped-def]
+        """Test main function with --test flag."""
+        with patch.object(sys, "argv", ["cli", "--test", "command"]):
+            with patch("sys.stdin", StringIO("")):
+                with patch("zsh_ai_assistant.cli.generate_command") as mock_generate:
+                    mock_generate.return_value = "test command"
+                    main()
+
+        # Check output
+        captured = capsys.readouterr()
+        assert "test command" in captured.out
+        # Verify --test flag was removed from argv
+        assert "--test" not in sys.argv
+
 
 class TestMessageConversion:
     """Test cases for message format conversion."""
@@ -335,6 +365,13 @@ class TestMessageConversion:
         messages = [{"unknown": "content"}]
         result = convert_to_openai_format(messages)
         expected = [{"unknown": "content"}]
+        assert result == expected
+
+    def test_convert_to_openai_format_with_multiple_unknown_formats(self) -> None:
+        """Test that multiple unknown message formats are preserved."""
+        messages = [{"unknown": "content1"}, {"weird": "content2"}, {"random": "content3"}]
+        result = convert_to_openai_format(messages)
+        expected = [{"unknown": "content1"}, {"weird": "content2"}, {"random": "content3"}]
         assert result == expected
 
     def test_convert_to_openai_format_with_empty_list(self) -> None:

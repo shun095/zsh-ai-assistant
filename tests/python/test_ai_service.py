@@ -171,3 +171,303 @@ class TestLangChainAIService:
         assert len(captured_messages) == 2
         assert captured_messages[0].content.startswith("You are a shell command generator.")
         assert captured_messages[1].content == "test prompt"
+
+    def test_service_with_test_mode_uses_mock_client(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test that service uses MockClient when test_mode is True."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Verify that client is a MockClient
+        from zsh_ai_assistant.ai_service import MockClient
+
+        assert isinstance(service.client, MockClient)
+
+    def test_generate_command_with_test_mode(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test command generation using MockClient in test mode."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test various command generation scenarios
+        result = service.generate_command("List files in current directory")
+        assert result == "ls"
+
+        result = service.generate_command("Check git status")
+        assert result == "git status"
+
+        result = service.generate_command("Some other command")
+        assert result == 'echo "hello world"'
+
+    def test_chat_with_test_mode(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test chat functionality using MockClient in test mode."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test basic chat
+        messages = [{"role": "user", "content": "Hello"}]
+        result = service.chat(messages)
+        assert result == "Hello"
+
+        # Test chat with history context
+        messages = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": "Hello"},
+            {"role": "user", "content": "world"},
+        ]
+        result = service.chat(messages)
+        assert result == "I received your message: world"
+
+    def test_chat_with_history_context_in_test_mode(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test chat with history context using MockClient."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test "what did I say first" functionality
+        messages = [
+            {"role": "user", "content": "First message"},
+            {"role": "assistant", "content": "Response to first"},
+            {"role": "user", "content": "what did i say first"},
+        ]
+        result = service.chat(messages)
+        assert "First message" in result
+
+        # Test "what did you say first" functionality
+        messages = [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hello"},
+            {"role": "user", "content": "what did you say first"},
+        ]
+        result = service.chat(messages)
+        assert "Hello, this is my first response as your AI assistant" in result
+
+    def test_mock_client_reset_functionality(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test MockClient reset functionality."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Generate a command to increment call count
+        service.generate_command("test")
+
+        # Verify call count is incremented
+        assert service.client.call_count == 1  # type: ignore[union-attr]
+        assert len(service.client.calls) == 1  # type: ignore[union-attr]
+
+        # Reset the client
+        service.client.reset()  # type: ignore[union-attr]
+
+        # Verify reset worked
+        assert service.client.call_count == 0  # type: ignore[union-attr]
+        assert len(service.client.calls) == 0  # type: ignore[union-attr]
+
+    def test_mock_client_with_custom_response_callback(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test MockClient with custom response callback."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        def custom_callback(messages: list) -> Mock:
+            mock_response = Mock()
+            mock_response.content = "custom response"
+            return mock_response
+
+        from zsh_ai_assistant.ai_service import MockClient
+
+        mock_client = MockClient(response_callback=custom_callback)
+
+        result = mock_client.invoke([{"content": "test"}])
+        assert result.content == "custom response"
+
+    def test_mock_client_command_generation_patterns(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test MockClient command generation patterns."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test various command patterns
+        result = service.generate_command("git status")
+        assert result == "git status"
+
+        result = service.generate_command("check git")
+        assert result == "git status"
+
+        result = service.generate_command("list files")
+        assert result == "ls"
+
+        result = service.generate_command("find large files")
+        assert result == "ls"  # "find large files" contains "list" so it returns "ls"
+
+    def test_mock_client_error_handling(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test MockClient error handling."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test API error simulation - this should raise an exception
+        import pytest
+
+        with pytest.raises(Exception, match="API request failed"):
+            service.generate_command("return api error")
+
+    def test_chat_with_system_message_in_test_mode(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test chat with system message using MockClient."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test with system message provided
+        messages = [
+            {"role": "system", "content": "You are a test assistant."},
+            {"role": "user", "content": "Hello"},
+        ]
+        result = service.chat(messages)
+        assert result == "Hello"
+
+        # Test with no system message (should add default)
+        messages = [
+            {"role": "user", "content": "Hello"},
+        ]
+        result = service.chat(messages)
+        assert result == "Hello"
+
+    def test_mock_client_captures_calls(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test that MockClient captures all calls."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Generate multiple commands
+        service.generate_command("first command")
+        service.generate_command("second command")
+
+        # Verify calls were captured
+        assert service.client.call_count == 2  # type: ignore[union-attr]
+        assert len(service.client.calls) == 2  # type: ignore[union-attr]
+        assert len(service.client.calls[0]) == 2  # type: ignore[union-attr]  # system + human message
+        assert len(service.client.calls[1]) == 2  # type: ignore[union-attr]  # system + human message
+
+    def test_chat_with_tell_me_what_we_said(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test MockClient response to 'tell me what we said'."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test the specific pattern that should match the regex
+        messages = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": "Hello"},
+            {"role": "user", "content": "world"},
+            {"role": "assistant", "content": "I received your message: world"},
+            {"role": "user", "content": "tell me what we said"},
+        ]
+        result = service.chat(messages)
+        assert "You said" in result and "I said" in result
+
+    def test_empty_prompt_with_test_mode(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test empty prompt handling in test mode."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        result = service.generate_command("")
+        assert result == 'echo "hello world"'
+
+    def test_chat_with_second_message_queries(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test MockClient responses to second message queries."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test "what did I say second"
+        messages = [
+            {"role": "user", "content": "First"},
+            {"role": "assistant", "content": "Response 1"},
+            {"role": "user", "content": "Second"},
+            {"role": "assistant", "content": "Response 2"},
+            {"role": "user", "content": "what did i say second"},
+        ]
+        result = service.chat(messages)
+        assert "Second" in result
+
+        # Test "what did you say second"
+        messages = [
+            {"role": "user", "content": "First"},
+            {"role": "assistant", "content": "Response 1"},
+            {"role": "user", "content": "Second"},
+            {"role": "assistant", "content": "Response 2"},
+            {"role": "user", "content": "what did you say second"},
+        ]
+        result = service.chat(messages)
+        assert "Response 2" in result
+
+    def test_mock_client_fallback_responses(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test MockClient fallback responses for various queries."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        # Test response for "what did i say first" with one message
+        result = service.chat([{"role": "user", "content": "what did i say first"}])
+        assert "You said: what did i say first" in result
+
+        # Test response for "what did i say second" when only one message exists
+        service.chat([{"role": "user", "content": "hello"}])
+        result = service.chat([{"role": "user", "content": "what did i say second"}])
+        assert "I received your message: what did i say second" in result
+
+        # Test fallback for "what did you say first" when no assistant messages
+        result = service.chat([{"role": "user", "content": "what did you say first"}])
+        assert "I received your message: what did you say first" in result
+
+        # Test fallback for "what did you say second" when only one assistant message
+        service.chat([{"role": "user", "content": "test"}])
+        result = service.chat([{"role": "user", "content": "what did you say second"}])
+        assert "I received your message: what did you say second" in result
+
+        # Test response for "what did you say first" when no assistant messages
+        result = service.chat([{"role": "user", "content": "what did you say first"}])
+        assert "I received your message: what did you say first" in result
+
+        # Test response for "what did you say second" when only one assistant message exists
+        # First create an assistant message by chatting
+        result = service.chat([{"role": "user", "content": "hello"}])
+        # Now ask for second assistant message
+        result = service.chat([{"role": "user", "content": "what did you say second"}])
+        assert "I received your message: what did you say second" in result
+
+        # Test fallback for "what did you say second" when only one assistant message
+        service.chat([{"role": "user", "content": "hello"}])
+        result = service.chat([{"role": "user", "content": "what did you say second"}])
+        assert "I received your message: what did you say second" in result
+
+        # Test fallback for unknown content
+        result = service.chat([{"role": "user", "content": "unknown query"}])
+        assert "I received your message: unknown query" in result
