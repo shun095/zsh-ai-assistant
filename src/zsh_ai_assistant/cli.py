@@ -13,34 +13,16 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     # Load configuration
     config = AIConfig()
 
-    # Check if we're in test mode (no API key required)
-    if test_mode:
-        # Simple test mode: map common prompts to commands
-        test_prompts = {
-            "check git current status": "git status",
-            "list current directory files": "ls",
-        }
-        for key, cmd in test_prompts.items():
-            if key in prompt.lower():
-                return cmd
-
-        # Special case: simulate API error
-        if "return api error" in prompt.lower():
-            return "# Error: API request failed"
-
-        # Default fallback for test mode
-        return 'echo "hello world"'
-
     # Normal mode: require valid configuration
-    if not config.is_valid:
+    if not test_mode and not config.is_valid:
         print(
             "Error: Invalid AI configuration. Please set " "OPENAI_API_KEY and OPENAI_BASE_URL",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    # Create AI service
-    service = LangChainAIService(config)
+    # Create AI service with test mode
+    service = LangChainAIService(config, test_mode=test_mode)
 
     try:
         # Generate command
@@ -74,84 +56,17 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
         print(f"Error: Invalid JSON format: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Check if we're in test mode (no API key required)
-    if test_mode:
-        # Test mode: simulate AI responses based on content
-        # Get the last user message (expecting OpenAI format)
-        user_messages = [msg for msg in messages if msg.get("role") == "user"]
-        assistant_messages = [msg for msg in messages if msg.get("role") == "assistant"]
-
-        if not user_messages:
-            return "No user messages found"
-
-        last_user_message = user_messages[-1].get("content", "")
-
-        # Simulate AI responses
-        if last_user_message.lower() == "hello":
-            # Return just the greeting text (no JSON wrapper)
-            # This simulates a real AI response
-            return "Hello! How can I assist you today?"
-        elif "what did i say first" in last_user_message.lower():
-            # Check if there are previous user messages in the conversation history
-            if len(user_messages) >= 2:
-                # Return the first message content
-                first_message = user_messages[0].get("content", "")
-                return f"You said '{first_message}' first"
-            else:
-                return "This is your first message."
-        elif "what did i say second" in last_user_message.lower():
-            # Check if there are at least 3 user messages in the conversation history
-            if len(user_messages) >= 3:
-                # Return the second message content
-                second_message = user_messages[1].get("content", "")
-                return f"You said '{second_message}' second"
-            elif len(user_messages) >= 2:
-                return "This is your second message."
-            else:
-                return "This is your first message."
-        elif "what did you say first" in last_user_message.lower():
-            # Check if there are previous assistant messages in the conversation history
-            if len(assistant_messages) >= 1:
-                # Return the first assistant message content
-                first_assistant_message = assistant_messages[0].get("content", "")
-                return f"I said '{first_assistant_message}' first"
-            else:
-                return "This is my first response."
-        elif "what did you say second" in last_user_message.lower():
-            # Check if there are at least 2 assistant messages in the conversation history
-            if len(assistant_messages) >= 2:
-                # Return the second assistant message content
-                second_assistant_message = assistant_messages[1].get("content", "")
-                return f"I said '{second_assistant_message}' second"
-            elif len(assistant_messages) >= 1:
-                return "This is my second response."
-            else:
-                return "This is my first response."
-        elif last_user_message.lower() == "world":
-            # For 'world' message, return a simple acknowledgment
-            return f"I received your message: {last_user_message}"
-        elif "tell me what we said" in last_user_message.lower():
-            # Provide a summary of the conversation
-            if user_messages and assistant_messages:
-                return f"You said: {user_messages[0].get('content', '')}. I said: {assistant_messages[0].get('content', '')}"
-            else:
-                return "We haven't said much yet."
-        else:
-            # For other messages, return a simple acknowledgment
-            # The conversation history is managed by zsh using jq
-            return f"I received your message: {last_user_message}"
-
     # Load configuration
     config = AIConfig()
-    if not config.is_valid:
+    if not test_mode and not config.is_valid:
         print(
             "Error: Invalid AI configuration. Please set " "OPENAI_API_KEY and OPENAI_BASE_URL",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    # Create AI service
-    service = LangChainAIService(config)
+    # Create AI service with test mode
+    service = LangChainAIService(config, test_mode=test_mode)
 
     try:
         # Generate response using OpenAI format
