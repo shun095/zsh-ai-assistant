@@ -245,7 +245,7 @@ The zsh frontend that:
 
 ### Test Coverage
 
-The project maintains **90%+ test coverage** for both Python and shell components.
+The project maintains **96.4% test coverage** for Python code, ensuring reliability and maintainability.
 
 ### Test Structure
 
