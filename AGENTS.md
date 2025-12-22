@@ -38,6 +38,15 @@ uv run pytest -v --cov=. --cov-report=html
 uv run pytest tests/shell/ -v -s --cov=. --cov-report=html
 ```
 
+* Shell tests with timeout (for slow tests):
+
+```bash
+timeout 120 uv run pytest tests/shell/ -v -s --cov=. --cov-report=html
+```
+
+> [!NOTE]
+> You MUST always specify timeout parameter for bash tool. (Not in command parameter)
+
 * Requirement: Python coverage must be 90% or higher. PRs that do not meet this are rejected.
 
 ## Linting and formatting
@@ -105,3 +114,9 @@ A PR must pass:
 ## Enforcement
 
 * Automated CI enforces checks. Reviewers will reject noncompliant PRs. Exceptions require explicit maintainer approval in PR comments.
+
+## Workflows
+
+- Before starting the task, always create a comprehensive plan for the task as todo list.
+- Before getting stuck in a debugging loop, you should always do thorough web research. If that fails, immediately stop debugging and do web research before trying a different approach. Web research is cheap and time-consuming, but getting yourself stuck in a loop is a waste of time and money.
+- When debugging, always include a temporary debug log. Debugging based on imagination is a waste of time and money.

@@ -1,5 +1,6 @@
 """AI service implementation using LangChain."""
 
+import time
 from typing import List, Dict, Any, cast, Optional, Callable, Union
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
@@ -10,13 +11,15 @@ from .config import AIConfig
 class MockClient:
     """Mock client for testing AI service without calling real API."""
 
-    def __init__(self, response_callback: Optional[Callable] = None):
+    def __init__(self, response_callback: Optional[Callable] = None, simulate_delay: float = 1.5):
         """Initialize mock client with optional response callback.
 
         Args:
             response_callback: Optional function that takes messages and returns response
+            simulate_delay: Delay in seconds to simulate API latency (default: 1.5 for spinner animation)
         """
         self.response_callback = response_callback
+        self.simulate_delay = simulate_delay
         self.call_count = 0
         self.calls: List[List[Dict[str, Any]]] = []
 
@@ -31,6 +34,10 @@ class MockClient:
         """
         self.call_count += 1
         self.calls.append(messages)
+
+        # Simulate API delay to allow spinner animation
+        if self.simulate_delay > 0:
+            time.sleep(self.simulate_delay)
 
         if self.response_callback:
             return self.response_callback(messages)
@@ -133,8 +140,9 @@ class LangChainAIService(AIServiceInterface):
         self.client: Union[MockClient, ChatOpenAI]
 
         if test_mode:
-            # Use mock client for testing
-            self.client = MockClient()
+            # Use mock client for testing (with delay to allow spinner animation)
+            # 1.0 seconds is enough to show 5-10 spinner frames (at 100ms per frame)
+            self.client = MockClient(simulate_delay=1.0)
         else:
             # Use real ChatOpenAI client
             if not config.is_valid:

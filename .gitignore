@@ -16,7 +16,7 @@ wheel-\*.whl
 
 # Virtual environment
 .venv/
-shell/
+/shell/
 
 # IDE and Editor
 .idea/

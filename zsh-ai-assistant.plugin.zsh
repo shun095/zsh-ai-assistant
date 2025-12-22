@@ -2,6 +2,8 @@
 # Main plugin file for oh-my-zsh
 
 # Configuration
+# Disable job control messages for background processes
+setopt NO_MONITOR NO_NOTIFY
 # Determine the plugin directory properly when loaded by oh-my-zsh
 # Try multiple methods to find the plugin directory
 
@@ -74,24 +76,111 @@ fi
 # Check if required Python modules are available
 # This check will be done when functions are called, not during plugin load
 
+# Animated spinner variables
+zsh_ai_assistant_spinner_frames=()
+zsh_ai_assistant_spinner_frame_index=0
+zsh_ai_assistant_spinner_pid=""
+zsh_ai_assistant_spinner_control_file=""
+
+# Initialize spinner frames with Unicode braille patterns
+zsh_ai_assistant_init_spinner() {
+    # Generate spinner frames using printf with UTF-8 byte sequences
+    # These are Unicode braille pattern characters
+    # U+280B ⠋, U+2819 ⠙, U+2839 ⠹, U+2838 ⠸, U+283C ⠼, U+2834 ⠴, U+2826 ⠦, U+2827 ⠧, U+2807 ⠇, U+280F ⠏
+    zsh_ai_assistant_spinner_frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+}
+
+# Initialize spinner when plugin loads
+zsh_ai_assistant_init_spinner
+
 # Show loading message in buffer
 zsh_ai_assistant_show_loading() {
     # Only show loading message if ZLE is active
     if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Show loading message in buffer
-        BUFFER="🤖 Generating command..."
-        # Move cursor to end
-        CURSOR=${#BUFFER}
-        # Use zle -R for buffer update only (not reset-prompt)
-        zle -R
+        # Show first frame of spinner (zsh arrays are 1-indexed)
+        frame="${zsh_ai_assistant_spinner_frames[1]}"
+        echo -ne "$frame Generating command...\r"
+        
+        # Reset frame index
+        zsh_ai_assistant_spinner_frame_index=0
+        
+        # Initialize control file path (will be created when stopping)
+        zsh_ai_assistant_spinner_control_file=""
+        
+        # Store the control file path (empty initially)
+        zsh_ai_assistant_spinner_control_file_temp=""
+        
+        # Create background process for spinner animation
+        # Use nohup to ensure the process continues running
+        # This also helps with signal handling
+        (
+            # Disable job control messages and monitoring
+            setopt local_options no_notify no_monitor
+            
+            # Create control file to signal when to stop
+            zsh_ai_assistant_spinner_control_file=$(mktemp)
+            
+            # Store it in a file that the parent can read
+            echo "$zsh_ai_assistant_spinner_control_file" > /tmp/spinner_control_file_$$.txt
+            
+            # Trap SIGTERM to stop the spinner gracefully
+            trap 'touch "$zsh_ai_assistant_spinner_control_file.stop"' TERM
+            
+            while [[ ! -f "$zsh_ai_assistant_spinner_control_file.stop" ]]; do
+                
+                # Increment frame index with modulo (zsh arrays are 1-indexed)
+                zsh_ai_assistant_spinner_frame_index=$(( (zsh_ai_assistant_spinner_frame_index + 1) % ${#zsh_ai_assistant_spinner_frames} ))
+                # Adjust to 1-indexed if modulo result is 0
+                if [[ $zsh_ai_assistant_spinner_frame_index -eq 0 ]]; then
+                    zsh_ai_assistant_spinner_frame_index=${#zsh_ai_assistant_spinner_frames}
+                fi
+                
+                # Update buffer with next frame using carriage return
+                frame="${zsh_ai_assistant_spinner_frames[zsh_ai_assistant_spinner_frame_index]}"
+                echo -ne "$frame Generating command...\r"
+                
+                # Sleep for 100ms
+                sleep 0.1
+            done
+            
+            # Clean up trap
+            trap - TERM
+        ) &
+        
+        # Store the background process pid
+        zsh_ai_assistant_spinner_pid=$!
     fi
 }
 
-# Hide loading message (no-op, buffer is already restored)
+# Update spinner frame (no longer used, kept for compatibility)
+zsh_ai_assistant_update_spinner() {
+    # This function is no longer used, but kept for compatibility
+    true
+}
+
+# Hide loading message
 zsh_ai_assistant_hide_loading() {
-    # No action needed as buffer is restored in show_loading
-    # This function is kept for API consistency
-    :
+    # Clear the spinner from buffer
+    if [[ -n "${ZLE_STATE:-}" ]]; then
+        # Read the control file path from the temporary file
+        if [[ -f /tmp/spinner_control_file_$$.txt ]]; then
+            zsh_ai_assistant_spinner_control_file=$(cat /tmp/spinner_control_file_$$.txt)
+            
+            # Stop the spinner by creating the .stop file
+            touch "${zsh_ai_assistant_spinner_control_file}.stop"
+            
+            # Clean up the temporary file
+            rm -f /tmp/spinner_control_file_$$.txt
+        fi
+        
+        # Also send SIGTERM to the background process for cleaner shutdown
+        if [[ -n "${zsh_ai_assistant_spinner_pid:-}" ]]; then
+            kill -TERM "$zsh_ai_assistant_spinner_pid" 2>/dev/null || true
+        fi
+        
+        # Clear the spinner line using carriage return and spaces
+        echo -ne "\r                              \r"
+    fi
 }
 
 # Core command transformation logic (testable without zle)
@@ -172,17 +261,41 @@ zsh_ai_assistant_convert_comment_to_command() {
     fi
 }
 
+# Frontend SIGTERM handler for command transformation
+# This function handles SIGTERM/INT signals and ensures the background spinner is stopped
+zsh_ai_assistant_handle_sigterm() {
+    # Hide the loading spinner
+    zsh_ai_assistant_hide_loading
+    
+    # Reset the zle prompt to return to a clean state
+    if [[ -n "${ZLE_STATE:-}" ]]; then
+        zle .reset-prompt
+    fi
+    
+    # Exit the command transformation process
+    return 1
+}
+
 # Command transformation function (zle-dependent wrapper)
 zsh_ai_assistant_transform_command() {
     local prompt="$1"
     
+    # Set up SIGTERM trap to handle Ctrl+C during command generation
+    # This will create the control file to stop the spinner
+    trap 'zsh_ai_assistant_handle_sigterm' TERM INT
+    
     zsh_ai_assistant_show_loading
     
     local generated_command=""
+    
+    # Convert comment to command (this will take some time due to Python execution)
     generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
     
     # Hide loading message after generation
     zsh_ai_assistant_hide_loading
+    
+    # Clean up trap
+    trap - TERM INT
     
     if [[ -n "$generated_command" ]]; then
         # Replace the current prompt with the generated command
