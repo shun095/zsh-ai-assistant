@@ -109,5 +109,3 @@ class TestAIConfig:
         config = AIConfig()
 
         assert config.max_tokens == 1000
-
-
