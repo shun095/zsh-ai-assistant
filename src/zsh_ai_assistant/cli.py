@@ -4,6 +4,7 @@
 import json
 import os
 import sys
+import logging
 from typing import List, Dict, Any
 
 # Add the src directory to Python path to ensure module can be imported
@@ -13,9 +14,12 @@ if _src_dir not in sys.path:
     sys.path.insert(0, _src_dir)
 
 # Import after path manipulation
-from zsh_ai_assistant.config import AIConfig  # noqa: E402
+from zsh_ai_assistant.config import AIConfig, setup_logging  # noqa: E402
 from zsh_ai_assistant.ai_service import LangChainAIService  # noqa: E402
 from zsh_ai_assistant.interactive_chat import InteractiveChat  # noqa: E402
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 
 def generate_command(prompt: str, test_mode: bool = False) -> str:
@@ -23,8 +27,14 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     # Load configuration
     config = AIConfig()
 
+    # Setup logging based on config
+    setup_logging(config.debug)
+    logger.debug("Generate command called with prompt: %s", prompt)
+    logger.debug("Configuration: %s", config)
+
     # Normal mode: require valid configuration
     if not test_mode and not config.is_valid:
+        logger.error("Invalid AI configuration")
         print(
             "Error: Invalid AI configuration. Please set " "OPENAI_API_KEY and OPENAI_BASE_URL",
             file=sys.stderr,
@@ -32,14 +42,18 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
         sys.exit(1)
 
     # Create AI service with test mode
+    logger.info("Creating AI service")
     service = LangChainAIService(config, test_mode=test_mode)
 
     try:
         # Generate command
+        logger.info("Generating command from prompt")
         command = service.generate_command(prompt)
+        logger.debug("Generated command: %s", command)
         return command.strip()
     except Exception as e:
         # Return error message as a commented line so zsh plugin knows not to execute it
+        logger.error("Error generating command: %s", e)
         error_message = f"# Error: {e}"
         print(error_message)
         sys.exit(1)
@@ -56,19 +70,27 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
 
     Returns response content only (not wrapped in JSON).
     """
+    # Load configuration first to setup logging
+    config = AIConfig()
+    setup_logging(config.debug)
+    logger.debug("Chat called with messages_json length: %d", len(messages_json))
+
     if not messages_json:
+        logger.error("No chat history provided")
         print("Error: No chat history provided", file=sys.stderr)
         sys.exit(1)
 
     try:
         messages = json.loads(messages_json)
+        logger.debug("Parsed messages: %s", messages)
     except json.JSONDecodeError as e:
+        logger.error("Invalid JSON format: %s", e)
         print(f"Error: Invalid JSON format: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Load configuration
-    config = AIConfig()
+    # Normal mode: require valid configuration
     if not test_mode and not config.is_valid:
+        logger.error("Invalid AI configuration")
         print(
             "Error: Invalid AI configuration. Please set " "OPENAI_API_KEY and OPENAI_BASE_URL",
             file=sys.stderr,
@@ -76,13 +98,17 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
         sys.exit(1)
 
     # Create AI service with test mode
+    logger.info("Creating AI service")
     service = LangChainAIService(config, test_mode=test_mode)
 
     try:
         # Generate response using OpenAI format
+        logger.info("Generating chat response")
         response = service.chat(messages)
+        logger.debug("Generated response: %s", response)
         return response.strip()
     except Exception as e:
+        logger.error("Error generating chat response: %s", e)
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -133,10 +159,17 @@ def convert_to_openai_format(messages: List[Dict[str, Any]]) -> List[Dict[str, A
 
 def run_interactive_chat(test_mode: bool = False) -> None:
     """Run interactive chat session."""
+    # Load configuration first to setup logging
+    config = AIConfig()
+    setup_logging(config.debug)
+    logger.debug("Running interactive chat with test_mode: %s", test_mode)
+
     try:
+        logger.info("Starting interactive chat session")
         chat = InteractiveChat(test_mode=test_mode)
         chat.run_interactive_chat()
     except Exception as e:
+        logger.error("Error in interactive chat: %s", e)
         print(f"Error: {e}")
         sys.exit(1)
 
