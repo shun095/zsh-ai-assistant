@@ -123,8 +123,10 @@ class TestInteractive:
         child_spawn: pexpect.spawn = self.child
         # Test that loading message is displayed during command generation
         child_spawn.send("# list current directory files\r")
-        # Wait for the loading message to appear in the buffer
-        child_spawn.expect("🤖 Generating command...")
+        # Wait for the first spinner frame to appear (with longer timeout)
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"), timeout=2)
+        # Wait for at least one more spinner frame (proving animation)
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"), timeout=2)
         # Wait for the command to be transformed to 'ls'
         child_spawn.expect("ls")
         try:
@@ -148,14 +150,16 @@ class TestInteractive:
         child_spawn.send('uv () { echo "failed reason message" >&2; return 1 }\r')
         # Test that loading message is displayed during command generation
         child_spawn.send("# list current directory files\r")
-        # Wait for the loading message to appear in the buffer
-        child_spawn.expect("🤖 Generating command...")
+        # Wait for the first spinner frame to appear
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"))
+        # Wait for at least one more spinner frame (proving animation)
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"))
         # Wait for the command to be transformed to 'error message'
         child_spawn.expect("# Error: failed reason message")
         # Send Enter to execute the command as comment out
         child_spawn.send("\r")
         try:
-            child_spawn.expect("🤖 Generating command...", timeout=3)
+            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"), timeout=3)
             # 見つかった場合
             raise Exception("Command generation should not be executed when `Error:`")
         except pexpect.TIMEOUT:
@@ -169,14 +173,16 @@ class TestInteractive:
         child_spawn: pexpect.spawn = self.child
         # Test that loading message is displayed during command generation
         child_spawn.send("# return api error\r")
-        # Wait for the loading message to appear in the buffer
-        child_spawn.expect("🤖 Generating command...")
+        # Wait for the first spinner frame to appear
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"))
+        # Wait for at least one more spinner frame (proving animation)
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"))
         # Wait for the command to be transformed to 'error message'
         child_spawn.expect("# Error: ")
         # Send Enter to execute the command as comment out
         child_spawn.send("\r")
         try:
-            child_spawn.expect("🤖 Generating command...", timeout=3)
+            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"), timeout=3)
             # 見つかった場合
             raise Exception("Command generation should not be executed when `Error:`")
         except pexpect.TIMEOUT:
@@ -313,8 +319,10 @@ class TestInteractive:
 
         # Test command generation from /tmp directory
         child_spawn.send("# list files in current directory\r")
-        # Wait for the loading message
-        child_spawn.expect("🤖 Generating command...")
+        # Wait for the first spinner frame to appear
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"))
+        # Wait for at least one more spinner frame (proving animation)
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"))
         # Wait for the command to be transformed to 'ls'
         child_spawn.expect("ls")
         # Send Enter to execute the command
@@ -344,4 +352,41 @@ class TestInteractive:
 
         # Send another message
         child_spawn.sendline("quit")
+        child_spawn.expect("%")
+
+    def test_sigterm_interrupts_spinner(self) -> None:
+        """Test that the spinner animation can be interrupted via Ctrl+C (SIGTERM)."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Start a command generation that will take time
+        child_spawn.send("# list current directory files\r")
+
+        # Wait for the first spinner frame to appear
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"), timeout=2)
+
+        # Wait for at least one more spinner frame (proving animation is running)
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"), timeout=2)
+
+        # Send actual Ctrl+C to test SIGTERM handling
+        # Use sendintr() which is more reliable than sendcontrol('c')
+        child_spawn.sendintr()
+
+        # Wait for the spinner to stop and return to prompt or error message
+        # The spinner should be interrupted and we should get back to a prompt
+        # or see some indication that the process was interrupted
+        try:
+            child_spawn.expect("%")
+        except pexpect.TIMEOUT:
+            # If we don't get a prompt immediately, check if we're at least not seeing spinner frames
+            # The key is that the spinner should stop
+            try:
+                child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴"), timeout=0.5)
+                # If we get here, the spinner is still running
+                raise Exception("Spinner should have been stopped by Ctrl+C")
+            except pexpect.TIMEOUT:
+                # This is expected - the spinner should be stopped
+                pass
+
+        # Verify we're back at a clean prompt
         child_spawn.expect("%")
