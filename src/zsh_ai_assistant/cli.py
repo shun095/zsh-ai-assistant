@@ -15,6 +15,7 @@ if _src_dir not in sys.path:
 # Import after path manipulation
 from zsh_ai_assistant.config import AIConfig  # noqa: E402
 from zsh_ai_assistant.ai_service import LangChainAIService  # noqa: E402
+from zsh_ai_assistant.interactive_chat import InteractiveChat  # noqa: E402
 
 
 def generate_command(prompt: str, test_mode: bool = False) -> str:
@@ -130,6 +131,16 @@ def convert_to_openai_format(messages: List[Dict[str, Any]]) -> List[Dict[str, A
     return openai_messages
 
 
+def run_interactive_chat(test_mode: bool = False) -> None:
+    """Run interactive chat session."""
+    try:
+        chat = InteractiveChat(test_mode=test_mode)
+        chat.run_interactive_chat()
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+
 def main() -> None:
     """Main entry point for CLI utilities."""
     # Check if --test flag is present BEFORE removing it
@@ -162,6 +173,10 @@ def main() -> None:
             result = history_to_json(history_lines)
             print(result)
 
+        elif len(sys.argv) > 1 and sys.argv[1] == "interactive":
+            # Interactive chat mode
+            run_interactive_chat(test_mode)
+
         else:
             print("Usage:", file=sys.stderr)
             print("  command <prompt> - Generate command from prompt", file=sys.stderr)
@@ -170,6 +185,7 @@ def main() -> None:
                 "  history-to-json - Convert history to JSON " "(reads from stdin)",
                 file=sys.stderr,
             )
+            print("  interactive - Run interactive chat session", file=sys.stderr)
             sys.exit(1)
     except Exception as e:
         print(f"Error: {e}")
