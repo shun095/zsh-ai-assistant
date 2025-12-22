@@ -205,64 +205,28 @@ zsh_ai_assistant_transform_command() {
     fi
 }
 
-# AI chat function
+# AI chat function - minimal wrapper that delegates to Python
 zsh_ai_assistant_chat() {
-    # Continuous chat loop
-    # Use OpenAI API compatible JSON format throughout
-    # Initialize chat history as JSON array
-    local chat_history='[]'
-    while true; do
-        printf "Me: "
-        
-        # Read user input
-        local user_input=""
-        read -r user_input
-        
-        # Exit on empty input or 'quit'/'exit'
-        if [[ -z "$user_input" ]] || [[ "$user_input" =~ ^(quit|exit|q)$ ]]; then
-            echo "Goodbye!"
-            break
-        fi
-        
-        # Add user message to chat history using jq
-        # This maintains OpenAI API compatible format: {"role": "user", "content": "message"}
-        chat_history=$(jq --arg role "user" --arg content "$user_input" '. + [$ARGS.named]' <<< "$chat_history")
-        
-        # Add --test flag if ZSH_AI_ASSISTANT_TEST_MODE is set
-        local test_flag=""
-        if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
-            test_flag="--test"
-        fi
-        
-        # Call Python backend for AI response using uv run
-        # Pass the complete chat history in OpenAI format
-        local ai_response=""
-        
-        # Save current directory to restore later
-        local original_dir=$(pwd)
-        
-        # Change to plugin directory to run uv commands, then restore original directory
-        cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
-            echo "# Error: Could not change to plugin directory" >&2
-            return 1
-        }
-        
-        ai_response=$(printf "%s" "$chat_history" | uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag chat 2>/dev/null)
-        
-        # Restore original directory
-        cd "$original_dir" >/dev/null 2>&1 || true
-        
-        if [[ -n "$ai_response" ]]; then
-            # Handle multi-line AI responses properly
-            # Use echo with -e to interpret escape sequences
-            echo -e "AI: $ai_response"
-            
-            # Add AI response to chat history using jq
-            # Maintain OpenAI API format: {"role": "assistant", "content": "response"}
-            # Use jq to properly handle multi-line content
-            chat_history=$(jq --arg role "assistant" --arg content "$ai_response" '. + [$ARGS.named]' <<< "$chat_history")
-        fi
-    done
+    # Add --test flag if ZSH_AI_ASSISTANT_TEST_MODE is set
+    local test_flag=""
+    if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
+        test_flag="--test"
+    fi
+    
+    # Save current directory to restore later
+    local original_dir=$(pwd)
+    
+    # Change to plugin directory to run uv commands, then restore original directory
+    cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
+        echo "# Error: Could not change to plugin directory" >&2
+        return 1
+    }
+    
+    # Run interactive chat using Python backend
+    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag interactive
+    
+    # Restore original directory
+    cd "$original_dir" >/dev/null 2>&1 || true
 }
 
 # Widget for command transformation
