@@ -81,6 +81,7 @@ The plugin uses the following environment variables:
 | `AI_MODEL` | AI model to use | `gpt-3.5-turbo` |
 | `AI_TEMPERATURE` | Sampling temperature (0-1) | `0.7` |
 | `AI_MAX_TOKENS` | Maximum tokens in response | `1000` |
+| `AI_DEBUG` | Enable debug logging (true/false) | `false` |
 
 ### Example Configuration
 

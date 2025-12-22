@@ -1,10 +1,14 @@
 """AI service implementation using LangChain."""
 
+import logging
 from typing import List, Dict, Any, cast, Optional, Callable, Union
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from .interfaces import AIServiceInterface
 from .config import AIConfig
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 
 class MockClient:
@@ -132,14 +136,19 @@ class LangChainAIService(AIServiceInterface):
         self.test_mode = test_mode
         self.client: Union[MockClient, ChatOpenAI]
 
+        logger.debug("Initializing AI service with config: %s", config)
+        logger.debug("Test mode: %s", test_mode)
+
         if test_mode:
             # Use mock client for testing
+            logger.info("Using mock client for testing")
             self.client = MockClient()
         else:
             # Use real ChatOpenAI client
             if not config.is_valid:
                 raise ValueError("Invalid AI configuration: API key and base URL are required")
 
+            logger.info("Using real ChatOpenAI client")
             self.client = ChatOpenAI(
                 api_key=config.api_key,  # type: ignore[arg-type]
                 base_url=config.base_url,
@@ -150,6 +159,8 @@ class LangChainAIService(AIServiceInterface):
 
     def generate_command(self, prompt: str) -> str:
         """Generate a shell command from a natural language prompt."""
+        logger.debug("Generating command for prompt: %s", prompt)
+
         system_message = SystemMessage(
             content=(
                 "You are a shell command generator. "
@@ -161,11 +172,16 @@ class LangChainAIService(AIServiceInterface):
         )
         human_message = HumanMessage(content=prompt)
 
+        logger.debug("Calling AI service with system message and human message")
         response = self.client.invoke([system_message, human_message])
+
+        logger.debug("Generated command: %s", response.content)
         return cast(str, response.content)
 
     def chat(self, messages: List[Dict[str, Any]]) -> str:
         """Generate a response from a chat history."""
+        logger.debug("Chat messages: %s", messages)
+
         # Convert messages to LangChain format
         langchain_messages: list = []
 
@@ -192,5 +208,8 @@ class LangChainAIService(AIServiceInterface):
             elif role == "assistant":
                 langchain_messages.append(AIMessage(content=content))
 
+        logger.debug("Calling AI service with LangChain messages")
         response = self.client.invoke(langchain_messages)
+
+        logger.debug("AI response: %s", response.content)
         return cast(str, response.content)
