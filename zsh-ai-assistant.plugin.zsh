@@ -251,8 +251,11 @@ zsh_ai_assistant_convert_comment_to_command() {
         echo "$generated_command"
         return 0
     else
-        # If uv failed, return the captured stderr in the error message
-        if [[ -n "$stderr_output" ]]; then
+        # If uv failed, return the captured output in the error message
+        # Check stdout first (Python CLI prints errors to stdout with # Error: prefix)
+        if [[ -n "$generated_command" ]]; then
+            echo "$generated_command"
+        elif [[ -n "$stderr_output" ]]; then
             echo "# Error: $stderr_output"
         else
             echo "# Error: Failed to generate command"
