@@ -74,24 +74,194 @@ fi
 # Check if required Python modules are available
 # This check will be done when functions are called, not during plugin load
 
-# Show loading message in buffer
+# Flame animation characters
+zsh_ai_assistant_flames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+
+# Global variable to track animation process
+zsh_ai_assistant_animation_pid=""
+
+# Global variable to track foreground process
+zsh_ai_assistant_foreground_pid=""
+
+# Global variable to track animation control file
+zsh_ai_assistant_animation_control_file=""
+
+# Global variable to track animation start time for testing
+zsh_ai_assistant_animation_start_time=""
+
+# Global variable to track animation frame count for testing
+zsh_ai_assistant_animation_frame_count=0
+
+# Show flame animation in buffer
 zsh_ai_assistant_show_loading() {
     # Only show loading message if ZLE is active
     if [[ -n "${ZLE_STATE:-}" ]]; then
-        # Show loading message in buffer
-        BUFFER="🤖 Generating command..."
-        # Move cursor to end
-        CURSOR=${#BUFFER}
-        # Use zle -R for buffer update only (not reset-prompt)
-        zle -R
+        # Reset animation tracking variables
+        zsh_ai_assistant_animation_start_time=""
+        zsh_ai_assistant_animation_frame_count=0
+        
+        # Create a control file for inter-process communication
+        zsh_ai_assistant_animation_control_file=$(mktemp -u)
+        touch "$zsh_ai_assistant_animation_control_file"
+        
+        # Start flame animation in background
+        (
+            # Set options to suppress job control messages
+            setopt local_options no_notify no_monitor
+            
+            # Flame characters as a string
+            local flames="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+            local flame_count=10
+            
+            # Animation loop
+            local index=0
+            local frame_count=0
+            local start_time=$(date +%s%N)
+            
+            # Set animation start time for testing
+            zsh_ai_assistant_animation_start_time="$start_time"
+            
+            # Run animation while control file exists
+            while [[ -f "$zsh_ai_assistant_animation_control_file" ]]; do
+                # Get current flame character
+                local flame="${flames[$index]}"
+                
+                # Show flame animation
+                # Write to stderr so pexpect can capture it (stdout is for command output)
+                printf "$flame Generating command...\r" >&2
+                
+                # Increment index with wrap-around
+                index=$(( (index + 1) % flame_count ))
+                
+                # Increment frame count for testing
+                frame_count=$((frame_count + 1))
+                zsh_ai_assistant_animation_frame_count=$frame_count
+                
+                # Ensure animation runs for at least 0.2 seconds to allow pexpect to capture it
+                sleep 0.1
+            done
+            
+            # Make sure we display at least one frame before exiting
+            if [[ $frame_count -eq 0 ]]; then
+                printf "⠋ Generating command...\r" >&2
+            fi
+        ) &
+        
+        # Capture the animation PID
+        zsh_ai_assistant_animation_pid=$!
+        
+        # Start the foreground process in background
+        # Use temporary files to capture output
+        local stdout_file=$(mktemp)
+        local stderr_file=$(mktemp)
+        
+        # Save current directory to restore later
+        local original_dir=$(pwd)
+        
+        # Change to plugin directory to run uv commands
+        cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
+            echo "# Error: Could not change to plugin directory" >&2
+            return 1
+        }
+        
+        # Add --test flag if ZSH_AI_ASSISTANT_TEST_MODE is set
+        local test_flag=""
+        if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
+            test_flag="--test"
+        fi
+        
+        # Run uv command in background
+        uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$1" > "$stdout_file" 2> "$stderr_file" &
+        zsh_ai_assistant_foreground_pid=$!
+        
+        # Restore original directory
+        cd "$original_dir" >/dev/null 2>&1 || true
+        
+        # Wait for the foreground process to complete
+        wait "$zsh_ai_assistant_foreground_pid"
+        
+        # Read the output after the process completes
+        local generated_command=""
+        local stderr_output=""
+        
+        if [[ -f "$stdout_file" ]]; then
+            generated_command=$(cat "$stdout_file")
+        fi
+        if [[ -f "$stderr_file" ]]; then
+            stderr_output=$(cat "$stderr_file")
+        fi
+        
+        # Clean up temporary files
+        rm -f "$stdout_file" "$stderr_file"
+        
+        # Give the animation a moment to display at least one frame
+        sleep 0.2
+        
+        # Stop the animation by removing the control file
+        rm -f "$zsh_ai_assistant_animation_control_file"
+        
+        # Wait for animation to finish
+        wait "$zsh_ai_assistant_animation_pid" 2>/dev/null || true
+        
+        # If uv failed, return the captured stderr in the error message
+        if [[ -z "$generated_command" ]] && [[ -n "$stderr_output" ]]; then
+            echo "# Error: $stderr_output"
+            return 1
+        fi
+        
+        # Clean up
+        zsh_ai_assistant_animation_pid=""
+        zsh_ai_assistant_foreground_pid=""
+        zsh_ai_assistant_animation_control_file=""
+        
+        # Return the generated command
+        echo "$generated_command"
     fi
 }
 
-# Hide loading message (no-op, buffer is already restored)
+# Cleanup function for animation on SIGINT
+zsh_ai_assistant_cleanup_animation() {
+    # Kill the foreground process (uv command)
+    if [[ -n "$zsh_ai_assistant_foreground_pid" ]]; then
+        kill "$zsh_ai_assistant_foreground_pid" 2>/dev/null || true
+    fi
+    
+    # Stop the animation by removing the control file
+    if [[ -n "$zsh_ai_assistant_animation_control_file" ]] && [[ -f "$zsh_ai_assistant_animation_control_file" ]]; then
+        rm -f "$zsh_ai_assistant_animation_control_file"
+    fi
+    
+    # Kill the animation process
+    if [[ -n "$zsh_ai_assistant_animation_pid" ]]; then
+        kill "$zsh_ai_assistant_animation_pid" 2>/dev/null || true
+    fi
+    
+    # Wait for both processes to finish
+    wait "$zsh_ai_assistant_foreground_pid" 2>/dev/null || true
+    wait "$zsh_ai_assistant_animation_pid" 2>/dev/null || true
+    
+    # Clean up
+    zsh_ai_assistant_animation_pid=""
+    zsh_ai_assistant_foreground_pid=""
+    zsh_ai_assistant_animation_control_file=""
+    
+    # Remove the trap
+    trap - INT
+    
+    # Exit the function to allow normal Ctrl+C behavior
+    # The signal will be handled by the default handler
+    return 1
+}
+
+# Hide loading message and refresh prompt
 zsh_ai_assistant_hide_loading() {
-    # No action needed as buffer is restored in show_loading
-    # This function is kept for API consistency
-    :
+    # Clear the animation line
+    printf "\r\033[K"
+    
+    # Use zle to refresh the prompt properly
+    if [[ -n "${ZLE_STATE:-}" ]]; then
+        zle -R
+    fi
 }
 
 # Core command transformation logic (testable without zle)
@@ -172,14 +342,50 @@ zsh_ai_assistant_convert_comment_to_command() {
     fi
 }
 
+# SIGTERM handler to interrupt animation and foreground process
+zsh_ai_assistant_sigterm_handler() {
+    # Stop the animation by removing the control file
+    if [[ -n "$zsh_ai_assistant_animation_control_file" ]] && [[ -f "$zsh_ai_assistant_animation_control_file" ]]; then
+        rm -f "$zsh_ai_assistant_animation_control_file"
+    fi
+    
+    # Kill processes
+    if [[ -n "$zsh_ai_assistant_animation_pid" ]]; then
+        kill "$zsh_ai_assistant_animation_pid" 2>/dev/null || true
+    fi
+    if [[ -n "$zsh_ai_assistant_foreground_pid" ]]; then
+        kill "$zsh_ai_assistant_foreground_pid" 2>/dev/null || true
+    fi
+    
+    # Clear animation line
+    printf "\r\033[K" 2>/dev/null || true
+    
+    # Restore prompt
+    if [[ -n "${ZLE_STATE:-}" ]]; then
+        zle -R 2>/dev/null || true
+    fi
+    
+    # Exit with error code
+    exit 1
+}
+
 # Command transformation function (zle-dependent wrapper)
 zsh_ai_assistant_transform_command() {
     local prompt="$1"
     
-    zsh_ai_assistant_show_loading
+    # Set up SIGTERM handler
+    trap zsh_ai_assistant_sigterm_handler SIGTERM
     
+    # Set up SIGINT handler for Ctrl+C
+    trap zsh_ai_assistant_cleanup_animation INT
+    
+    # Show loading animation and get generated command
     local generated_command=""
-    generated_command=$(zsh_ai_assistant_convert_comment_to_command "$prompt")
+    generated_command=$(zsh_ai_assistant_show_loading "$prompt")
+    
+    # Remove signal handlers
+    trap - SIGTERM
+    trap - INT
     
     # Hide loading message after generation
     zsh_ai_assistant_hide_loading
@@ -316,4 +522,14 @@ test_transform_comment() {
     else
         return 1
     fi
+}
+
+# Test helper function - gets animation frame count
+test_get_animation_frame_count() {
+    echo "$zsh_ai_assistant_animation_frame_count"
+}
+
+# Test helper function - gets animation start time
+test_get_animation_start_time() {
+    echo "$zsh_ai_assistant_animation_start_time"
 }
