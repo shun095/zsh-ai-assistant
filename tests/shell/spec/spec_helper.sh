@@ -23,9 +23,5 @@ spec_helper_configure() {
   : import 'support/custom_matcher'
   
   # Source the plugin to make functions available
-  : before_all 'source /home/vibeuser/project/zsh-ai-assistant.plugin.zsh'
-  
-  # Alternative approach - try to load from current directory
-  : before_all 'if [[ -f "zsh-ai-assistant.plugin.zsh" ]]; then source zsh-ai-assistant.plugin.zsh; fi'
+  : before_all 'source ../../zsh-ai-assistant.plugin.zsh'
 }
-=======

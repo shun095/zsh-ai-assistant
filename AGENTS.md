@@ -46,7 +46,8 @@ uv run pytest tests/python/test_cli.py -v
 Run ShellSpec tests for zsh functions:
 
 ```bash
-./run_shellspec.sh
+cd tests/shell
+shellspec --shell zsh
 ```
 
 ### Integration Tests

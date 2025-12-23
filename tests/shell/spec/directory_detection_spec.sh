@@ -2,10 +2,10 @@
 
 # ShellSpec helper to load and compile files
 # This is required for all spec files
-Include /home/vibeuser/project/tests/shell/spec_helper.sh
+Include ./spec/spec_helper.sh
 
 # Source the plugin to make functions available
-source /home/vibeuser/project/zsh-ai-assistant.plugin.zsh
+source ../../zsh-ai-assistant.plugin.zsh
 
 # Test suite for directory detection functionality
 Describe 'zsh_ai_assistant_detect_plugin_dir()'
@@ -23,7 +23,7 @@ Describe 'zsh_ai_assistant_detect_plugin_dir()'
     # Create test directory structure
     mkdir -p "$ZSH_CUSTOM"
     # Copy plugin file to test location
-    cp "/home/vibeuser/project/zsh-ai-assistant.plugin.zsh" "$ZSH_CUSTOM/"
+    cp "../../zsh-ai-assistant.plugin.zsh" "$ZSH_CUSTOM/"
     # Change to test directory
     cd "$ZSH_CUSTOM"
     
@@ -39,7 +39,7 @@ Describe 'zsh_ai_assistant_detect_plugin_dir()'
   It 'should detect plugin directory using ZSH'
     export ZSH="/tmp/test-oh-my-zsh/plugins/zsh-ai-assistant"
     mkdir -p "$ZSH"
-    cp "/home/vibeuser/project/zsh-ai-assistant.plugin.zsh" "$ZSH/"
+    cp "../../zsh-ai-assistant.plugin.zsh" "$ZSH/"
     cd "$ZSH"
     
     When call zsh_ai_assistant_detect_plugin_dir
@@ -53,7 +53,7 @@ Describe 'zsh_ai_assistant_detect_plugin_dir()'
   It 'should detect plugin directory from relative path'
     # Create test directory structure
     mkdir -p "zsh-ai-assistant"
-    cp "/home/vibeuser/project/zsh-ai-assistant.plugin.zsh" "zsh-ai-assistant/"
+    cp "../../zsh-ai-assistant.plugin.zsh" "zsh-ai-assistant/"
     
     When call zsh_ai_assistant_detect_plugin_dir
     The output should eq "zsh-ai-assistant"
