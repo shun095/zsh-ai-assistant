@@ -74,6 +74,92 @@ fi
 # Check if required Python modules are available
 # This check will be done when functions are called, not during plugin load
 
+# TESTABLE FUNCTIONS - Extract these for unit testing
+
+# Function to detect plugin directory (testable version)
+zsh_ai_assistant_detect_plugin_dir() {
+    # Method 1: Check if we're in oh-my-zsh custom plugins
+    if [[ -n "$ZSH_CUSTOM" ]] && [[ "$0" == "$ZSH_CUSTOM"* ]]; then
+        ZSH_AI_ASSISTANT_DIR="${0:h}"
+    # Method 2: Check if we're in oh-my-zsh standard plugins
+    elif [[ -n "$ZSH" ]] && [[ "$0" == "$ZSH"* ]]; then
+        ZSH_AI_ASSISTANT_DIR="${0:h}"
+    # Method 3: Try to find plugin relative to current working directory
+    elif [[ -d "zsh-ai-assistant" ]] && [[ -f "zsh-ai-assistant/zsh-ai-assistant.plugin.zsh" ]]; then
+        ZSH_AI_ASSISTANT_DIR="zsh-ai-assistant"
+    # Method 4: Use realpath as fallback
+    else
+        PLUGIN_FILE="$(realpath "$0" 2>/dev/null || readlink -f "$0" 2>/dev/null || echo "$0")"
+        ZSH_AI_ASSISTANT_DIR="${PLUGIN_FILE:h}"
+    fi
+    echo "$ZSH_AI_ASSISTANT_DIR"
+}
+
+# Function to check if a line is a comment (testable version)
+# This is the version used for testing and in the zle wrapper
+zsh_ai_assistant_check_for_comment() {
+    local line="$1"
+    
+    # Check if line starts with # (after trimming leading whitespace)
+    local trimmed_line="${line#\"${line%%[![:space:]]*}\"}"
+    if [[ "$trimmed_line" =~ ^[[:space:]]*# ]]; then
+        # Found a comment, check if there's content after #
+        local comment_content="${trimmed_line#\#}"
+        comment_content="${comment_content# }"  # Remove leading space
+        if [[ -n "${comment_content%%[[:space:]]*}" ]]; then
+            # Check if this is an error message (should not be transformed again)
+            if [[ "$trimmed_line" =~ ^[[:space:]]*#.*Error: ]]; then
+                # This is an error message, don't transform it
+                return 1
+            fi
+            # Found a comment with content, return 0
+            return 0
+        fi
+        return 1
+    fi
+    
+    return 1
+}
+
+# Function to extract comment content (testable version)
+zsh_ai_assistant_extract_comment() {
+    local line="$1"
+    # Extract content after #, removing leading/trailing whitespace
+    local comment="${line#*#}"
+    comment="${comment#"${comment%%[![:space:]]*}"}"  # Remove leading whitespace
+    comment="${comment%"${comment##*[![:space:]]}"}"  # Remove trailing whitespace
+    echo "$comment"
+}
+
+# Function to get animation frame count (testable version)
+zsh_ai_assistant_get_animation_frame_count() {
+    echo "$zsh_ai_assistant_animation_frame_count"
+}
+
+# Function to set animation frame count (testable version)
+zsh_ai_assistant_set_frame_count() {
+    local count="$1"
+    zsh_ai_assistant_animation_frame_count="$count"
+}
+
+# Function to increment animation frame count (testable version)
+zsh_ai_assistant_increment_frame_count() {
+    ((zsh_ai_assistant_animation_frame_count++))
+}
+
+# Function to get animation start time (testable version)
+zsh_ai_assistant_get_animation_start_time() {
+    echo "$zsh_ai_assistant_animation_start_time"
+}
+
+# Function to set animation start time (testable version)
+zsh_ai_assistant_set_animation_start_time() {
+    local time="$1"
+    zsh_ai_assistant_animation_start_time="$time"
+}
+
+# END OF TESTABLE FUNCTIONS
+
 # Flame animation characters
 zsh_ai_assistant_flames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
 
@@ -469,30 +555,6 @@ zle -N zsh_ai_assistant_chat
 # Bind command transformation to Enter key when line starts with #
 # Only set up zle bindings if zle is available (interactive shell)
 if [[ -n "$ZSH_VERSION" ]] && command -v zle >/dev/null 2>&1; then
-    zsh_ai_assistant_check_for_comment() {
-        local line="$1"
-        
-        # Check if line starts with # (after trimming leading whitespace)
-        local trimmed_line="${line#\"${line%%[![:space:]]*}\"}"
-        if [[ "$trimmed_line" =~ ^[[:space:]]*# ]]; then
-            # Found a comment, check if there's content after #
-            local comment_content="${trimmed_line#\#}"
-            comment_content="${comment_content# }"  # Remove leading space
-            if [[ -n "${comment_content%%[[:space:]]*}" ]]; then
-                # Check if this is an error message (should not be transformed again)
-                if [[ "$trimmed_line" =~ ^[[:space:]]*#.*Error: ]]; then
-                    # This is an error message, don't transform it
-                    return 1
-                fi
-                # Found a comment with content, return 0
-                return 0
-            fi
-            return 1
-        fi
-        
-        return 1
-    }
-
     # Define the accept-line wrapper function
     zsh_ai_assistant_accept_line_wrapper() {
         if zsh_ai_assistant_check_for_comment "$BUFFER"; then
@@ -519,8 +581,7 @@ if [[ -n "$ZSH_VERSION" ]] && command -v zle >/dev/null 2>&1; then
     # Store original accept-line widget name
     zsh_ai_assistant_original_accept_line_widget="${widgets[accept-line]}"
     
-    # Load plugin
-    autoload -Uz zsh_ai_assistant_check_for_comment
+    # Register the accept-line wrapper widget
     zle -N zsh_ai_assistant_accept_line_wrapper
     
     # Bind the accept-line wrapper to the Enter key

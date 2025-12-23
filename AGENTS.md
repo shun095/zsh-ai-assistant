@@ -4,7 +4,7 @@
 
 * zsh frontend: `zsh-ai-assistant.plugin.zsh`
 * Python backend: `src/zsh_ai_assistant/`
-* Tests: `tests/python/` and `tests/shell/`
+* Tests: `tests/python/`, `tests/shell/` and `tests/integration`
 
 ## Environment setup
 
@@ -25,22 +25,43 @@ All development and CI commands must run inside `uv`'s virtual environment.
 
 ## Tests and coverage
 
-* Run tests with coverage:
+### Python Tests
+
+Run all Python tests with coverage:
 
 ```bash
 source .venv/bin/activate
 uv run pytest -v --cov=. --cov-report=html
 ```
 
-* Shell tests:
+Run specific Python test files:
 
 ```bash
 source .venv/bin/activate
-uv run pytest tests/shell/ -v -s --cov=. --cov-report=html
+uv run pytest tests/python/test_cli.py -v
+```
+
+### ShellSpec Tests (zsh functions)
+
+Run ShellSpec tests for zsh functions:
+
+```bash
+cd tests/shell
+shellspec --shell zsh
+```
+
+### Integration Tests
+
+Run integration tests with pexpect:
+
+```bash
+source .venv/bin/activate
+uv run pytest tests/integration/ -vs
 ```
 
 * Requirement: Python coverage must be 90% or higher. PRs that do not meet this are rejected.
-* Requirement: You MUST always use -s for shell test to check actual shell output.
+* Requirement: You MUST always use -s for integration test to check actual shell output.
+* Requirement: You MUST run all test suites (ShellSpec, Python unit, and integration) before submitting PRs.
 
 ## Linting and formatting
 

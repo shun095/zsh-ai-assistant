@@ -16,7 +16,6 @@ wheel-\*.whl
 
 # Virtual environment
 .venv/
-shell/
 
 # IDE and Editor
 .idea/
@@ -50,6 +49,10 @@ pytest_cache/
 
 # Zsh plugin specific
 *.zcompdump
+
+# ShellSpec testing framework
+shellspec
+shellspec-repo/
 
 # Documentation and notes
 NOTES*
