@@ -4,7 +4,7 @@
 
 * zsh frontend: `zsh-ai-assistant.plugin.zsh`
 * Python backend: `src/zsh_ai_assistant/`
-* Tests: `tests/python/` and `tests/shell/`
+* Tests: `tests/python/`, `tests/shell/` and `tests/integration`
 
 ## Environment setup
 
@@ -25,22 +25,84 @@ All development and CI commands must run inside `uv`'s virtual environment.
 
 ## Tests and coverage
 
-* Run tests with coverage:
+### Python Tests
+
+Run all Python tests with coverage:
 
 ```bash
 source .venv/bin/activate
 uv run pytest -v --cov=. --cov-report=html
 ```
 
-* Shell tests:
+Run specific Python test files:
 
 ```bash
 source .venv/bin/activate
-uv run pytest tests/shell/ -v -s --cov=. --cov-report=html
+uv run pytest tests/python/test_cli.py -v
+```
+
+### ShellSpec Tests (zsh functions)
+
+The project uses ShellSpec for unit testing zsh functions. ShellSpec is a BDD-style testing framework for shell scripts.
+
+**Prerequisites:**
+- ShellSpec 0.28.1 must be installed (installed via web installer)
+- Tests must run with zsh (not bash)
+
+**Running ShellSpec tests:**
+
+Using the wrapper script (recommended):
+
+```bash
+./run_shellspec.sh
+```
+
+Directly with ShellSpec:
+
+```bash
+cd tests/shell
+export SHELLSPEC_SHELL=zsh
+shellspec --shell zsh
+```
+
+**Test structure:**
+
+```
+tests/shell/
+├── .shellspec                  # ShellSpec project marker
+├── spec/                       # Test specifications
+│   ├── spec_helper.sh          # Test helper (sources plugin)
+│   ├── support/                # Test support files
+│   │   └── before_all.sh        # Setup hook
+│   └── directory_detection_spec.sh  # Test file
+```
+
+**Writing ShellSpec tests:**
+
+ShellSpec uses a BDD-style DSL:
+
+```zsh
+Describe "Feature Name"
+  It "should do something"
+    When run some_command
+    The output should include "expected output"
+    The status should be success
+  End
+End
+```
+
+### Integration Tests
+
+Run integration tests with pexpect:
+
+```bash
+source .venv/bin/activate
+uv run pytest tests/integration/ -vs
 ```
 
 * Requirement: Python coverage must be 90% or higher. PRs that do not meet this are rejected.
-* Requirement: You MUST always use -s for shell test to check actual shell output.
+* Requirement: You MUST always use -s for integration test to check actual shell output.
+* Requirement: You MUST run all test suites (ShellSpec, Python unit, and integration) before submitting PRs.
 
 ## Linting and formatting
 
