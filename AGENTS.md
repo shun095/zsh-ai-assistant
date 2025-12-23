@@ -43,52 +43,10 @@ uv run pytest tests/python/test_cli.py -v
 
 ### ShellSpec Tests (zsh functions)
 
-The project uses ShellSpec for unit testing zsh functions. ShellSpec is a BDD-style testing framework for shell scripts.
-
-**Prerequisites:**
-- ShellSpec 0.28.1 must be installed (installed via web installer)
-- Tests must run with zsh (not bash)
-
-**Running ShellSpec tests:**
-
-Using the wrapper script (recommended):
+Run ShellSpec tests for zsh functions:
 
 ```bash
 ./run_shellspec.sh
-```
-
-Directly with ShellSpec:
-
-```bash
-cd tests/shell
-export SHELLSPEC_SHELL=zsh
-shellspec --shell zsh
-```
-
-**Test structure:**
-
-```
-tests/shell/
-├── .shellspec                  # ShellSpec project marker
-├── spec/                       # Test specifications
-│   ├── spec_helper.sh          # Test helper (sources plugin)
-│   ├── support/                # Test support files
-│   │   └── before_all.sh        # Setup hook
-│   └── directory_detection_spec.sh  # Test file
-```
-
-**Writing ShellSpec tests:**
-
-ShellSpec uses a BDD-style DSL:
-
-```zsh
-Describe "Feature Name"
-  It "should do something"
-    When run some_command
-    The output should include "expected output"
-    The status should be success
-  End
-End
 ```
 
 ### Integration Tests
