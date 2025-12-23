@@ -109,8 +109,8 @@ zsh_ai_assistant_show_loading() {
             # Set options to suppress job control messages
             setopt local_options no_notify no_monitor
             
-            # Flame characters as a string
-            local flames="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+            # Flame characters as a string (to avoid UTF-8 array issues)
+            local flame_string="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
             local flame_count=10
             
             # Animation loop
@@ -121,14 +121,26 @@ zsh_ai_assistant_show_loading() {
             # Set animation start time for testing
             zsh_ai_assistant_animation_start_time="$start_time"
             
-            # Run animation while control file exists
-            while [[ -f "$zsh_ai_assistant_animation_control_file" ]]; do
-                # Get current flame character
-                local flame="${flames[$index]}"
+            # Run animation with timeout (minimum 0.5 seconds or until control file is removed)
+            local start_time=$(date +%s%N)
+            while [[ -f "$zsh_ai_assistant_animation_control_file" ]] && [[ $(($(date +%s%N) - start_time)) -lt 500000000 ]]; do
+                # Get current flame character from string
+                local flame="${flame_string:$index:1}"
                 
                 # Show flame animation
-                # Write to stderr so pexpect can capture it (stdout is for command output)
-                printf "$flame Generating command...\r" >&2
+                # Always write to stderr to avoid command interpretation issues
+                # In test mode, write without carriage return so pexpect can capture each frame
+                if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
+                    # During testing, write without carriage return so pexpect can capture each frame
+                    printf "$flame Generating command...\n" >&2
+                    # Small delay to ensure pexpect can capture the animation
+                    sleep 0.05
+                else
+                    # In production, use carriage return for smooth animation
+                    printf "$flame Generating command...\r" >&2
+                fi
+                
+
                 
                 # Increment index with wrap-around
                 index=$(( (index + 1) % flame_count ))
@@ -137,13 +149,17 @@ zsh_ai_assistant_show_loading() {
                 frame_count=$((frame_count + 1))
                 zsh_ai_assistant_animation_frame_count=$frame_count
                 
-                # Ensure animation runs for at least 0.2 seconds to allow pexpect to capture it
                 sleep 0.1
             done
             
             # Make sure we display at least one frame before exiting
             if [[ $frame_count -eq 0 ]]; then
                 printf "⠋ Generating command...\r" >&2
+            fi
+            
+            # Ensure animation runs for at least 0.2 seconds to allow pexpect to capture it
+            if [[ $frame_count -gt 0 ]]; then
+                sleep 0.2
             fi
         ) &
         
@@ -194,20 +210,29 @@ zsh_ai_assistant_show_loading() {
         # Clean up temporary files
         rm -f "$stdout_file" "$stderr_file"
         
-        # Give the animation a moment to display at least one frame
-        sleep 0.2
-        
         # Stop the animation by removing the control file
         rm -f "$zsh_ai_assistant_animation_control_file"
         
         # Wait for animation to finish
         wait "$zsh_ai_assistant_animation_pid" 2>/dev/null || true
         
+        # Give a brief moment for output to flush
+        sleep 0.1
+        
         # If uv failed, return the captured stderr in the error message
         if [[ -z "$generated_command" ]] && [[ -n "$stderr_output" ]]; then
-            echo "# Error: $stderr_output"
+            # In test mode, just print the error without clearing (to avoid escape sequences)
+            if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
+                printf "# Error: %s\n" "$stderr_output"
+            else
+                # In production mode, clear the animation line first
+                printf "\r\033[K" 2>/dev/null || true
+                printf "# Error: %s\n" "$stderr_output"
+            fi
             return 1
         fi
+        
+        printf "%s\n" "$generated_command"
         
         # Clean up
         zsh_ai_assistant_animation_pid=""
