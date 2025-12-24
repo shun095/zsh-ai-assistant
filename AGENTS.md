@@ -34,25 +34,29 @@ source .venv/bin/activate
 uv sync --all-extras
 ````
 
-* **All development and CI commands MUST run inside the `uv` virtual environment.**
+* **All development and CI commands for Python code MUST run inside the `uv` virtual environment.**
+* **The code must always run on machines with different directory structures and on both Linux and Mac platforms.** Please keep the use of absolute paths, APIs that work only on a specific OS, and commands that behave differently between GNU and BSD to a minimum.
 
 ---
 
 ## 4. Package Management (Strict)
 
-* **All dependency operations MUST use `uv`.**
+* **All Python dependency operations MUST use `uv`.**
 
   * Allowed: `uv add`, `uv remove`, `uv sync`, `uv run`
   * Forbidden: `pip`, `python -m pip`, or any direct pip usage
+
+* `sudo apt-get` can be used to install development tools like shellspec and kcov etc.
 
 ---
 
 ## 5. Testing (Required)
 
 * **Minimum Python coverage: 90%**. Below this threshold, PRs are rejected.
+* **Minimum shell coverage: 90%**. Below this threshold, PRs are rejected.
 * **All test suites MUST be run before PR submission**:
 
-  * ShellSpec
+  * ShellSpec with kcov coverage
   * Python unit tests
   * Integration tests
 * **Integration tests MUST use `-s`** to validate real shell output.
@@ -62,7 +66,7 @@ Examples:
 ```bash
 uv run pytest -v --cov=. --cov-report=html
 uv run pytest tests/integration/ -vs
-cd tests/shell && shellspec --shell zsh
+cd tests/shell && shellspec -s zsh --kcov --kcov-options "--include-path=../../libs/,../../zsh-ai-assistant.plugin.zsh --include-pattern=.zsh,.sh"
 ```
 
 ---
@@ -132,20 +136,18 @@ uv run mypy src tests
 * Follow instructions **literally**. If ambiguous, make minimal assumptions and return a complete result.
 * **Do not claim async, background, or deferred work.**
 * **Test-Driven Development (TDD) is mandatory**:
-
   1. Create a test list (e.g. `test_list.txt`).
   2. Select one test and write it first; confirm it fails.
   3. Implement the minimal code to pass the test.
   4. Refactor and update the test list.
   5. Repeat from step 2.
 * **Tool usage**:
-
   * Every `bash` tool invocation MUST specify a `timeout`.
   * During debugging, add temporary timestamped logs.
   * Remove all unnecessary files after debugging.
   * Maintain and update a comprehensive plan using the `todo` tool.
 * Perform external research when required and provide evidence when possible.
-* **Before producing final output**, run tests, formatting, and type checks.
+* **Before producing final output**, run tests, formatting, type checks, clean up unnecessary documents or snippets.
 
 ---
 
@@ -168,7 +170,6 @@ A PR MUST pass:
 * Disabling or bypassing linters, formatters, or type checks.
 * Global or broad ignores in Mypy or Flake8.
 * Adding or expanding Flake8 ignores without approval.
-
   * **Exception**: resolving a Black conflict requires explicit maintainer approval.
 * Falsifying or manipulating coverage or test results.
 * Committing temporary, draft, or task-artifact files.
@@ -177,6 +178,7 @@ A PR MUST pass:
 * Working outside the `uv` virtual environment.
 * Skipping any required test suite before PR submission.
 * Running integration tests without `-s`.
+* Including vulnable codes or documents like absolute path of the local machine, api key, user name or the other secret informations etc.
 * Ignoring TDD or `todo` tool requirements (for agents).
 
 ### Mandatory Pre-PR Checklist
@@ -189,7 +191,8 @@ A PR MUST pass:
 6. Temporary and redundant files removed.
 7. `.github/workflows/` changes approved by a maintainer (if applicable).
 8. `todo` plan updated (agent workflows).
-9. Final output produced only after all checks pass.
+9. All vulnable codes or documents MUST NOT be published on the Internet removed.
+10. Final output produced only after all checks pass.
 
 ---
 
