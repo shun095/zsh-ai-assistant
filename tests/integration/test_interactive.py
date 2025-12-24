@@ -160,12 +160,13 @@ class TestInteractive:
 
         # Wait for at least 2 more different flame characters to verify animation
         # This ensures the animation is actually cycling, not just showing one frame
+        # Increased timeout to 5 seconds to account for minimum 0.5 second animation runtime
         try:
             # Try to find a different flame character
             # We need to exclude the one we just saw
             # Since we don't know which one we saw, we'll just wait for any different one
             # This is a simplification - in a real test, we'd track which frame we saw
-            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=2)
+            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=5)
         except pexpect.TIMEOUT:
             raise Exception("Flame animation did not show multiple frames - animation is not working")
 
