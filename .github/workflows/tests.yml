@@ -30,6 +30,14 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y zsh
 
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck linter
+        run: |
+          shellcheck zsh-ai-assistant.plugin.zsh
+
       - name: Run tests
         run: |
           uv run pytest -v -s

@@ -1,0 +1,11 @@
+# Shellcheck configuration for zsh-ai-assistant
+# Minimal configuration to enable meaningful zsh linting
+
+# Set shell to zsh
+shell=zsh
+
+# SC2168: shellcheck incorrectly flags 'local' in main script scope as invalid
+# In zsh, 'local' is valid in the main script scope and is used here intentionally
+# for variable scoping within plugin initialization blocks
+
+disable=SC2168

@@ -74,6 +74,9 @@ CI MUST run and pass all of the following:
 * Black (line-length = 88)
 * Flake8 (only ignores: E203, W503)
 * Mypy (strict)
+* Shellcheck (zsh linter)
+
+**Note on ignore lists**: Do not add new ignores to `.flake8`, `.mypy`, or `.shellcheckrc` without explicit maintainer approval. Each ignore must be justified with a clear explanation in the configuration file. The goal is to fix real issues rather than hide them.
 
 Examples:
 
@@ -81,6 +84,7 @@ Examples:
 uv run black --check src tests
 uv run flake8 src tests
 uv run mypy src tests
+shellcheck zsh-ai-assistant.plugin.zsh
 ```
 
 ---
@@ -144,6 +148,7 @@ uv run mypy src tests
   * During debugging, add temporary timestamped logs.
   * Remove all unnecessary files after debugging.
   * Maintain and update a comprehensive plan using the `todo` tool.
+  * Use `gh` command for GitHub operations.
 * Perform external research when required and provide evidence when possible.
 * **Before producing final output**, run tests, formatting, and type checks.
 
@@ -153,7 +158,7 @@ uv run mypy src tests
 
 A PR MUST pass:
 
-* Black, Flake8 (restricted ignores only), and Mypy
+* Black, Flake8 (restricted ignores only), Mypy, and Shellcheck
 * Pytest with coverage ≥ 90%
 * Any modification to `.github/workflows/` requires explicit maintainer approval (recorded in PR comments)
 
@@ -166,7 +171,8 @@ A PR MUST pass:
 * Using `pip`, `python -m pip`, or any non-`uv` dependency management.
 * Claiming async/background work or splitting results across responses.
 * Disabling or bypassing linters, formatters, or type checks.
-* Global or broad ignores in Mypy or Flake8.
+* Adding new ignores to `.flake8`, `.mypy`, or `.shellcheckrc` without maintainer approval.
+* Global or broad ignores in Mypy, Flake8, or Shellcheck.
 * Adding or expanding Flake8 ignores without approval.
 
   * **Exception**: resolving a Black conflict requires explicit maintainer approval.
@@ -184,7 +190,7 @@ A PR MUST pass:
 1. All work done inside a `uv` virtual environment.
 2. ShellSpec, Python unit, and integration tests (`-s`) executed.
 3. Coverage ≥ 90%.
-4. Black, Flake8, and Mypy all pass with required settings.
+4. Black, Flake8, Mypy, and Shellcheck all pass with required settings.
 5. All `bash` tool invocations include `timeout`.
 6. Temporary and redundant files removed.
 7. `.github/workflows/` changes approved by a maintainer (if applicable).
@@ -210,4 +216,5 @@ cd tests/shell && shellspec --shell zsh
 uv run black --check src tests
 uv run flake8 src tests
 uv run mypy src tests
+shellcheck zsh-ai-assistant.plugin.zsh
 ```

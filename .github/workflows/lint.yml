@@ -37,6 +37,14 @@ jobs:
         run: |
           uv run flake8 src tests
 
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+
       - name: Run mypy type checker
         run: |
           uv run mypy src tests
+
+      - name: Run shellcheck linter
+        run: |
+          shellcheck zsh-ai-assistant.plugin.zsh
