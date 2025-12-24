@@ -1,148 +1,213 @@
-# AGENTS.md - Developer Guidelines for zsh-ai-assistant
+# AGENTS.md — Mandatory Developer & Agent Rules
 
-## Project layout
+## Purpose
+This document defines **mandatory rules** for developers and automated agents (including LLMs) working on **zsh-ai-assistant**.  
+Goals: strict compliance, reduced token usage, and lower human review cost.
 
+---
+
+## Scope
+Applies to local development, CI, PRs, and LLM-based agents.  
+Any exception requires **explicit maintainer approval recorded in PR comments**.
+
+---
+
+## 1. Core Principles (Highest Priority)
+* **Strict compliance**: All “MUST” requirements are mandatory. Violations result in PR rejection.
+* **Synchronous delivery only**: Do not claim background, async, or deferred work. Deliver complete results in a single response.
+* **Minimal assumptions**: Resolve ambiguity with the smallest reasonable assumption and produce an executable result.
+* **Automation-first**: CI checks are authoritative. No implicit exceptions.
+
+---
+
+## 2. Project Layout
 * zsh frontend: `zsh-ai-assistant.plugin.zsh`
 * Python backend: `src/zsh_ai_assistant/`
-* Tests: `tests/python/`, `tests/shell/` and `tests/integration`
+* Tests: `tests/python/`, `tests/shell/`, `tests/integration/`
 
-## Environment setup
+---
 
+## 3. Development Environment (Required)
 ```bash
 uv venv
 source .venv/bin/activate
 uv sync --all-extras
-```
+````
 
-All development and CI commands must run inside `uv`'s virtual environment.
+* **All development and CI commands MUST run inside the `uv` virtual environment.**
 
-## Package management
+---
 
-* Mandatory: use `uv` for all dependency operations.
+## 4. Package Management (Strict)
 
-  * Allowed: `uv add`, `uv remove`, `uv sync`, `uv run`.
-  * Forbidden: `pip`, `python -m pip`, `pip install` or any direct pip usage.
+* **All dependency operations MUST use `uv`.**
 
-## Tests and coverage
+  * Allowed: `uv add`, `uv remove`, `uv sync`, `uv run`
+  * Forbidden: `pip`, `python -m pip`, or any direct pip usage
 
-### Python Tests
+---
 
-Run all Python tests with coverage:
+## 5. Testing (Required)
+
+* **Minimum Python coverage: 90%**. Below this threshold, PRs are rejected.
+* **All test suites MUST be run before PR submission**:
+
+  * ShellSpec
+  * Python unit tests
+  * Integration tests
+* **Integration tests MUST use `-s`** to validate real shell output.
+
+Examples:
 
 ```bash
-source .venv/bin/activate
 uv run pytest -v --cov=. --cov-report=html
-```
-
-Run specific Python test files:
-
-```bash
-source .venv/bin/activate
-uv run pytest tests/python/test_cli.py -v
-```
-
-### ShellSpec Tests (zsh functions)
-
-Run ShellSpec tests for zsh functions:
-
-```bash
-cd tests/shell
-shellspec --shell zsh
-```
-
-### Integration Tests
-
-Run integration tests with pexpect:
-
-```bash
-source .venv/bin/activate
 uv run pytest tests/integration/ -vs
+cd tests/shell && shellspec --shell zsh
 ```
 
-* Requirement: Python coverage must be 90% or higher. PRs that do not meet this are rejected.
-* Requirement: You MUST always use -s for integration test to check actual shell output.
-* Requirement: You MUST run all test suites (ShellSpec, Python unit, and integration) before submitting PRs.
+---
 
-## Linting and formatting
+## 6. Formatting & Static Analysis (Required)
 
-* Pre-commit checks and CI must include:
+CI MUST run and pass all of the following:
 
-  * Black (line-length 88)
-  * Flake8 (keep ignores E203 and W503)
-  * Mypy
-* Commands:
+* Black (line-length = 88)
+* Flake8 (only ignores: E203, W503)
+* Mypy (strict)
+
+Examples:
 
 ```bash
-source .venv/bin/activate
 uv run black --check src tests
 uv run flake8 src tests
 uv run mypy src tests
 ```
 
-* CI must fail if any check fails.
+---
 
-## Type annotation policy
+## 7. Type Annotations (Part of Linting, Strict)
 
-* All Python code and tests must have complete type annotations. No untyped defs allowed.
-* Mypy project settings must include:
+* Type checking is part of static analysis; rules must not be duplicated elsewhere.
+* **All Python code and tests MUST have complete type annotations.**
 
-  * disallow_untyped_defs = True
-  * disallow_incomplete_defs = True
-  * warn_return_any = True
-  * warn_unused_ignores = True
-* For untyped external libs, use targeted ignores:
+  * Untyped `def` is forbidden.
+* Required Mypy settings (minimum):
 
-```python
-import pexpect  # type: ignore[import-untyped]
+  * `disallow_untyped_defs = True`
+  * `disallow_incomplete_defs = True`
+  * `warn_return_any = True`
+  * `warn_unused_ignores = True`
+* External untyped libraries may use **targeted** ignores only:
+
+  ```python
+  import pexpect  # type: ignore[import-untyped]
+  ```
+* Forbidden:
+
+  * Global `ignore_missing_imports = true`
+  * Indiscriminate `# type: ignore`
+  * Excessive or unnecessary use of `Any`
+
+---
+
+## 8. Documentation Management
+
+* **Remove all temporary or redundant files before committing**, including:
+
+  * `FINAL_SUMMARY.md`, `TEMP*.md`, `*.bak`, `*.tmp`, etc.
+* **Only the following documents are allowed**:
+
+  * `README.md`
+  * `AGENTS.md`
+  * `CHANGELOG.md`
+  * API documentation
+* Task-specific documents are allowed **only if unavoidable** and MUST be named:
+
+  * `*_TASK_SPECIFIC.md`
+
+---
+
+## 9. LLM Agent Operational Rules (Mandatory)
+
+* Follow instructions **literally**. If ambiguous, make minimal assumptions and return a complete result.
+* **Do not claim async, background, or deferred work.**
+* **Test-Driven Development (TDD) is mandatory**:
+
+  1. Create a test list (e.g. `test_list.txt`).
+  2. Select one test and write it first; confirm it fails.
+  3. Implement the minimal code to pass the test.
+  4. Refactor and update the test list.
+  5. Repeat from step 2.
+* **Tool usage**:
+
+  * Every `bash` tool invocation MUST specify a `timeout`.
+  * During debugging, add temporary timestamped logs.
+  * Remove all unnecessary files after debugging.
+  * Maintain and update a comprehensive plan using the `todo` tool.
+* Perform external research when required and provide evidence when possible.
+* **Before producing final output**, run tests, formatting, and type checks.
+
+---
+
+## 10. CI Requirements
+
+A PR MUST pass:
+
+* Black, Flake8 (restricted ignores only), and Mypy
+* Pytest with coverage ≥ 90%
+* Any modification to `.github/workflows/` requires explicit maintainer approval (recorded in PR comments)
+
+---
+
+## 11. Forbidden Actions & PR Checklist (Unified)
+
+### Forbidden Actions (Complete List)
+
+* Using `pip`, `python -m pip`, or any non-`uv` dependency management.
+* Claiming async/background work or splitting results across responses.
+* Disabling or bypassing linters, formatters, or type checks.
+* Global or broad ignores in Mypy or Flake8.
+* Adding or expanding Flake8 ignores without approval.
+
+  * **Exception**: resolving a Black conflict requires explicit maintainer approval.
+* Falsifying or manipulating coverage or test results.
+* Committing temporary, draft, or task-artifact files.
+* Modifying CI workflows to bypass checks without approval.
+* Invoking the `bash` tool without a `timeout`.
+* Working outside the `uv` virtual environment.
+* Skipping any required test suite before PR submission.
+* Running integration tests without `-s`.
+* Ignoring TDD or `todo` tool requirements (for agents).
+
+### Mandatory Pre-PR Checklist
+
+1. All work done inside a `uv` virtual environment.
+2. ShellSpec, Python unit, and integration tests (`-s`) executed.
+3. Coverage ≥ 90%.
+4. Black, Flake8, and Mypy all pass with required settings.
+5. All `bash` tool invocations include `timeout`.
+6. Temporary and redundant files removed.
+7. `.github/workflows/` changes approved by a maintainer (if applicable).
+8. `todo` plan updated (agent workflows).
+9. Final output produced only after all checks pass.
+
+---
+
+## Appendix: Common Commands
+
+```bash
+# Environment
+uv venv
+source .venv/bin/activate
+uv sync --all-extras
+
+# Tests
+uv run pytest -v --cov=. --cov-report=html
+uv run pytest tests/integration/ -vs
+cd tests/shell && shellspec --shell zsh
+
+# Formatting & Analysis
+uv run black --check src tests
+uv run flake8 src tests
+uv run mypy src tests
 ```
-
-* Forbidden: global `ignore_missing_imports = true`, indiscriminate `# type: ignore`, and unnecessary use of `Any`.
-
-## Documentation cleanup
-
-* Remove temporary, draft, and redundant docs before committing. Examples to remove: `FINAL_SUMMARY.md`, `TEMP*.md`, `*.bak`, `*.tmp`, `*_TASK_SPECIFIC.md`.
-* Do NOT create any documents or report only for the current task. You can create it only when it is unavoidable, and in that case, make sure to name it `*_TASK_SPECIFIC.md`.
-* Keep only essential docs: `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, API docs.
-
-## LLM agent operation rules
-
-* Follow instructions literally. When ambiguous, make minimal necessary assumptions and produce a complete, immediate result.
-* Do not claim asynchronous or background work. Deliver results in the same response.
-* Always run tests, formatters, and type checks before creating a PR or submitting output.
-
-## CI requirements
-
-A PR must pass:
-
-* Black formatting
-* Flake8
-* Mypy
-* Pytest with coverage threshold
-  Do not alter or bypass `.github/workflows/` without explicit maintainer approval.
-
-## Forbidden actions and consequences
-
-* Forbidden: direct pip usage, disabling type checks, disabling linters, adding or modifying linter configuration to ignore additional Flake8 errors or rules, falsifying coverage, committing temporary files, broad ignore comments.
-* If a proposed change would add or expand Flake8 ignores **solely to resolve a conflict with Black**, it **requires explicit approval from a repository maintainer** before merging.
-* Violations result in PR rejection and required fixes. Repeated violations may restrict merge permissions.
-
-## Enforcement
-
-* Automated CI enforces checks. Reviewers will reject noncompliant PRs. Exceptions require explicit maintainer approval in PR comments.
-
-## Workflow
-
-You MUST follow all rules below:
-
-- You MUST create and maintain a comprehensive plan using the todo tool.
-- You MUST follow Kent Beck’s Test-Driven Development (TDD) workflow:
-  1. You MUST create a test list for the specification (for example, `test_list.txt`).
-  2. You MUST select one test and write the test first. The test MUST fail initially (red).
-  3. You MUST implement the minimal production code required to make the test pass (green).
-  4. You MUST refactor the code.
-  5. You MUST update the test list when necessary.
-  6. You MUST select the next test and repeat the process starting from step 2.
-- You MUST always specify a `timeout` parameter when invoking the `bash` tool.
-- You MUST add temporal debug logs (for example, timestamped logs) during debugging.
-- You MUST perform thorough research using web search or fetch tools when appropriate.
-- You MUST remove all unnecessary files after completing each debugging session.
