@@ -57,14 +57,14 @@ uv sync --all-extras
 * **All test suites MUST be run before PR submission**:
 
   * ShellSpec with kcov coverage
-  * Python unit tests
-  * Integration tests
+  * Python unit tests (in `tests/python/`)
+  * Integration tests (in `tests/integration/`)
 * **Integration tests MUST use `-s`** to validate real shell output.
 
 Examples:
 
 ```bash
-uv run pytest -v --cov=. --cov-report=html
+uv run pytest tests/python/ -v
 uv run pytest tests/integration/ -vs
 cd tests/shell && shellspec -s zsh --kcov --kcov-options "--include-path=../../libs/,../../zsh-ai-assistant.plugin.zsh --include-pattern=.zsh,.sh"
 ```
@@ -191,7 +191,7 @@ A PR MUST pass:
 6. Temporary and redundant files removed.
 7. `.github/workflows/` changes approved by a maintainer (if applicable).
 8. `todo` plan updated (agent workflows).
-9. All vulnable codes or documents MUST NOT be published on the Internet removed.
+9. All vulnerable codes or documents MUST NOT be published on the Internet removed.
 10. Final output produced only after all checks pass.
 
 ---

@@ -279,6 +279,9 @@ if [[ -n "$ZSH_VERSION" ]] && command -v zle >/dev/null 2>&1; then
         fi
     }
     
+    # Register the function as a zle widget
+    zle -N zsh_ai_assistant_accept_line_wrapper
+    
     # Bind the accept-line wrapper to the Enter key
     bindkey "^M" zsh_ai_assistant_accept_line_wrapper
 else
