@@ -139,8 +139,8 @@ zsh_ai_assistant_background_animation() {
     local index_sub=0
     
     while true; do
-        index=$(( (index + 1) % flame_count))
-        index_sub=$(( (index_sub + 1) % flame_sub_count))
+        index=$(( (index) % flame_count + 1 ))
+        index_sub=$(( (index_sub) % flame_sub_count + 1 ))
         echo -ne "\033[2K\033[G"
         echo -ne "${loading_flames[$index]} Generating command${loading_flames_sub[$index_sub]}\r"
         sleep 0.1
@@ -149,6 +149,7 @@ zsh_ai_assistant_background_animation() {
 
 # Show loading animation
 zsh_ai_assistant_show_loading() {
+    setopt no_notify no_monitor
     trap zsh_ai_assistant_hide_loading INT
     zsh_ai_assistant_background_animation &
     zsh_ai_assistant_animation_pid=$!
@@ -158,9 +159,11 @@ zsh_ai_assistant_show_loading() {
 zsh_ai_assistant_hide_loading() {
     if [[ -n "$zsh_ai_assistant_animation_pid" ]]; then
         kill "$zsh_ai_assistant_animation_pid" 2>/dev/null || true
+        wait "$zsh_ai_assistant_animation_pid"
     fi
     trap - INT
     zsh_ai_assistant_animation_pid=""
+    unset notify monitor
 }
 
 # Generate command from comment
@@ -232,7 +235,7 @@ zsh_ai_assistant_transform_command() {
         BUFFER="$generated_command"
         CURSOR=${#BUFFER}
         if [[ -n "${ZLE_STATE:-}" ]]; then
-            zle -R
+            zle .redisplay
         fi
         return 0
     else
