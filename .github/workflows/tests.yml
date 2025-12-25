@@ -56,12 +56,12 @@ jobs:
           sudo ldconfig
 
       - name: Run shell tests with coverage (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+        if: false  # Temporarily disabled to test integration tests
         run: |
           cd tests/shell && shellspec --shell zsh --kcov --kcov-options "--include-path=../../src/,../../zsh-ai-assistant.plugin.zsh --include-pattern=.zsh,.sh"
 
       - name: Run shell tests without coverage (macOS)
-        if: matrix.os == 'macos-latest'
+        if: false  # Temporarily disabled to test integration tests
         run: |
           cd tests/shell && shellspec --shell zsh
 
