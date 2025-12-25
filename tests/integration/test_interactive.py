@@ -59,7 +59,8 @@ class TestInteractive:
         """Expect the animation pattern, handling platform differences."""
         # On macOS, animation uses plain text without terminal control codes
         # On Linux, animation uses terminal control codes
-        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
+        # The animation cycles through ., .., and ...
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command[.]{0,3}"), timeout=timeout)
 
     def setup_method(self) -> None:
         """Setup method to run before each test method."""
