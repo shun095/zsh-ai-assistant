@@ -73,61 +73,8 @@ zsh_ai_assistant_check_for_comment() {
     return 1
 }
 
-# Function to extract comment content (testable version)
-zsh_ai_assistant_extract_comment() {
-    local line="$1"
-    # Extract content after #, removing leading/trailing whitespace
-    local comment="${line#*#}"
-    comment="${comment#"${comment%%[![:space:]]*}"}"  # Remove leading whitespace
-    comment="${comment%"${comment##*[![:space:]]}"}"  # Remove trailing whitespace
-    echo "$comment"
-}
-
-# Function to get animation frame count (testable version)
-zsh_ai_assistant_get_animation_frame_count() {
-    echo "$zsh_ai_assistant_animation_frame_count"
-}
-
-# Function to set animation frame count (testable version)
-zsh_ai_assistant_set_frame_count() {
-    local count="$1"
-    zsh_ai_assistant_animation_frame_count="$count"
-}
-
-# Function to increment animation frame count (testable version)
-zsh_ai_assistant_increment_frame_count() {
-    ((zsh_ai_assistant_animation_frame_count++))
-}
-
-# Function to get animation start time (testable version)
-zsh_ai_assistant_get_animation_start_time() {
-    echo "$zsh_ai_assistant_animation_start_time"
-}
-
-# Function to set animation start time (testable version)
-zsh_ai_assistant_set_animation_start_time() {
-    local time="$1"
-    zsh_ai_assistant_animation_start_time="$time"
-}
-
-# Test helper function - gets animation frame count
-test_get_animation_frame_count() {
-    echo "$zsh_ai_assistant_animation_frame_count"
-}
-
-# Test helper function - gets animation start time
-test_get_animation_start_time() {
-    echo "$zsh_ai_assistant_animation_start_time"
-}
-
 # Global variable to track animation process
 zsh_ai_assistant_animation_pid=""
-
-# Global variable to track animation start time for testing
-zsh_ai_assistant_animation_start_time=""
-
-# Global variable to track animation frame count for testing
-zsh_ai_assistant_animation_frame_count=0
 
 # Background animation function
 zsh_ai_assistant_background_animation() {
@@ -213,8 +160,6 @@ zsh_ai_assistant_generate_command() {
         return 1
     fi
 }
-
-
 
 # Command transformation function (zle-dependent wrapper)
 zsh_ai_assistant_transform_command() {
