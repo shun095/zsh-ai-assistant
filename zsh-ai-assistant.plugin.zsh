@@ -74,11 +74,26 @@ zsh_ai_assistant_background_animation() {
     # DEBUG: Log that animation started
     echo "DEBUG: Animation started" >&2
     
+    # Check if we should use plain text mode (for tests or macOS)
+    # This avoids terminal control code issues with pexpect on macOS
+    local use_plain_text=0
+    if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+        use_plain_text=1
+        echo "DEBUG: Using plain text animation mode" >&2
+    fi
+    
     while true; do
         index=$(( (index) % flame_count + 1 ))
         index_sub=$(( (index_sub) % flame_sub_count + 1 ))
-        echo -ne "\033[2K\033[G"
-        echo -ne "${loading_flames[$index]} Generating command${loading_flames_sub[$index_sub]}\r"
+        
+        if [[ $use_plain_text -eq 1 ]]; then
+            # Plain text mode - no terminal control codes
+            echo "${loading_flames[$index]} Generating command${loading_flames_sub[$index_sub]}" >&2
+        else
+            # Normal mode with terminal control codes
+            echo -ne "\033[2K\033[G"
+            echo -ne "${loading_flames[$index]} Generating command${loading_flames_sub[$index_sub]}\r"
+        fi
         
         # DEBUG: Log each frame
         echo "DEBUG: Animation frame: ${loading_flames[$index]}" >&2
