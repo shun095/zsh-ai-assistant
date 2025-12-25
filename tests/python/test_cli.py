@@ -293,18 +293,17 @@ class TestCLIMain:
         assert exc_info.value.code == 1
 
     def test_main_with_test_mode_flag(self, capsys) -> None:  # type: ignore[no-untyped-def]
-        """Test main function with --test flag."""
-        with patch.object(sys, "argv", ["cli", "--test", "command"]):
-            with patch("sys.stdin", StringIO("")):
-                with patch("zsh_ai_assistant.cli.generate_command") as mock_generate:
-                    mock_generate.return_value = "test command"
-                    main()
+        """Test main function with ZSH_AI_ASSISTANT_TEST_MODE environment variable."""
+        with patch.object(sys, "argv", ["cli", "command"]):
+            with patch.dict(os.environ, {"ZSH_AI_ASSISTANT_TEST_MODE": "1"}):
+                with patch("sys.stdin", StringIO("")):
+                    with patch("zsh_ai_assistant.cli.generate_command") as mock_generate:
+                        mock_generate.return_value = "test command"
+                        main()
 
         # Check output
         captured = capsys.readouterr()
         assert "test command" in captured.out
-        # Verify --test flag was removed from argv
-        assert "--test" not in sys.argv
 
 
 class TestMessageConversion:

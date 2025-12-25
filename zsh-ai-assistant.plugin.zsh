@@ -120,12 +120,7 @@ zsh_ai_assistant_generate_command() {
         return 1
     }
     
-    local test_flag=""
-    if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
-        test_flag="--test"
-    fi
-    
-    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$comment" > "$stdout_file" 2> "$stderr_file"
+    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" command "$comment" > "$stdout_file" 2> "$stderr_file"
     
     cd "$original_dir" >/dev/null 2>&1 || true
     
@@ -185,11 +180,6 @@ zsh_ai_assistant_transform_command() {
 
 # AI chat function - minimal wrapper that delegates to Python
 zsh_ai_assistant_chat() {
-    local test_flag=""
-    if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]]; then
-        test_flag="--test"
-    fi
-    
     local original_dir=$(pwd)
     
     cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
@@ -197,7 +187,7 @@ zsh_ai_assistant_chat() {
         return 1
     }
     
-    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag interactive
+    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" interactive
     
     cd "$original_dir" >/dev/null 2>&1 || true
 }
