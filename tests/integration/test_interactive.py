@@ -61,11 +61,14 @@ class TestInteractive:
         if self.child is None:
             # Use longer timeout for macOS setup
             timeout = 30 if sys.platform == "darwin" else 10
-            # Spawn zsh directly
-            self.child = pexpect.spawn("zsh -f", timeout=timeout, encoding="utf-8")
-            # Merge stderr into stdout for macOS compatibility
+            # Use bash wrapper to merge stderr and stdout for macOS compatibility
+            # This is more reliable than programmatic merging
             if sys.platform == "darwin":
-                self.child.stderr = self.child.stdout
+                # Spawn bash that runs zsh with stderr merged into stdout
+                self.child = pexpect.spawn("bash -c 'zsh -f 2>&1'", timeout=timeout, encoding="utf-8")
+            else:
+                # On Linux, spawn zsh directly
+                self.child = pexpect.spawn("zsh -f", timeout=timeout, encoding="utf-8")
             self.child.setecho(False)
             self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
         # self.child.logfile_send = PexpectPrefixLogger("send: ", sys.stdout)
