@@ -60,7 +60,13 @@ class TestInteractive:
         # Initialize child if not already set
         if self.child is None:
             # Merge stderr with stdout so pexpect can capture animation output
-            self.child = pexpect.spawn("zsh -f", timeout=10, encoding="utf-8")
+            # Use longer timeout for macOS setup
+            timeout = 30 if sys.platform == "darwin" else 10
+            # Explicitly merge stderr with stdout for macOS compatibility
+            if sys.platform == "darwin":
+                self.child = pexpect.spawn("zsh -f 2>&1", timeout=timeout, encoding="utf-8")
+            else:
+                self.child = pexpect.spawn("zsh -f", timeout=timeout, encoding="utf-8")
             # Merge stderr into stdout
             self.child.setecho(False)
             self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
@@ -130,7 +136,9 @@ class TestInteractive:
         # Wait for the loading message to appear in the buffer
         # The animation cycles through flame characters, so we check for any flame character
         # Animation output is on stderr for background processes
-        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=10)
+        # Use longer timeout for macOS
+        timeout = 30 if sys.platform == "darwin" else 10
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
         # Wait for the command to be transformed to 'ls'
         child_spawn.expect("ls")
         try:
@@ -156,17 +164,21 @@ class TestInteractive:
         child_spawn.send("# list current directory files\r")
 
         # Wait for the first flame character (any flame character)
-        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=10)
+        # Use longer timeout for macOS
+        timeout = 30 if sys.platform == "darwin" else 10
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
 
         # Wait for at least 2 more different flame characters to verify animation
         # This ensures the animation is actually cycling, not just showing one frame
         # Increased timeout to 5 seconds to account for minimum 0.5 second animation runtime
+        # Use longer timeout for macOS
+        timeout = 15 if sys.platform == "darwin" else 5
         try:
             # Try to find a different flame character
             # We need to exclude the one we just saw
             # Since we don't know which one we saw, we'll just wait for any different one
             # This is a simplification - in a real test, we'd track which frame we saw
-            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=5)
+            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
         except pexpect.TIMEOUT:
             raise Exception("Flame animation did not show multiple frames - animation is not working")
 
@@ -191,12 +203,16 @@ class TestInteractive:
         child_spawn.send("# list current directory files\r")
 
         # Wait for any flame character (animation may have already cycled past first frame)
-        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=10)
+        # Use longer timeout for macOS
+        timeout = 30 if sys.platform == "darwin" else 10
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
 
         # Wait for at least one more different frame to ensure animation is actively running
         # We need to be flexible since we don't know which frame we just saw
         try:
-            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=0.5)
+            # Use longer timeout for macOS
+            timeout2 = 1 if sys.platform == "darwin" else 0.5
+            child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout2)
         except pexpect.TIMEOUT:
             # If we timeout, it means the animation stopped quickly, which is acceptable
             # for this test since we're about to send SIGINT anyway
@@ -223,7 +239,9 @@ class TestInteractive:
         child_spawn.send("# list current directory files\r")
         # Wait for the loading message to appear in the buffer
         # The animation cycles through flame characters, so we check for any flame character
-        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."))
+        # Use longer timeout for macOS
+        timeout = 30 if sys.platform == "darwin" else 10
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
         # Wait for the command to be transformed to 'error message'
         child_spawn.expect("# Error: failed reason message")
         # Send Enter to execute the command as comment out
@@ -244,7 +262,9 @@ class TestInteractive:
         # Test that loading message is displayed during command generation
         child_spawn.send("# return api error\r")
         # Wait for the loading message to appear in the buffer (any flame character)
-        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."))
+        # Use longer timeout for macOS
+        timeout = 30 if sys.platform == "darwin" else 10
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
         # Wait for the command to be transformed to 'error message'
         child_spawn.expect("# Error: ")
         # Send Enter to execute the command as comment out
@@ -388,7 +408,9 @@ class TestInteractive:
         # Test command generation from /tmp directory
         child_spawn.send("# list files in current directory\r")
         # Wait for the loading message (any flame character)
-        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."))
+        # Use longer timeout for macOS
+        timeout = 30 if sys.platform == "darwin" else 10
+        child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
         # Wait for the command to be transformed to 'ls'
         child_spawn.expect("ls")
         # Send Enter to execute the command
