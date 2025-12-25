@@ -13,24 +13,10 @@ else
     return 1
 fi
 
-# Check if Python backend is available
-ZSH_AI_ASSISTANT_PYTHON_BIN="${ZSH_AI_ASSISTANT_DIR}/.venv/bin/python"
-if [[ ! -f "${ZSH_AI_ASSISTANT_PYTHON_BIN}" ]]; then
-    # Try to find the virtual environment
-    if [[ -d "${ZSH_AI_ASSISTANT_DIR}/.venv" ]]; then
-        ZSH_AI_ASSISTANT_PYTHON_BIN="${ZSH_AI_ASSISTANT_DIR}/.venv/bin/python"
-    fi
-fi
-
 # Check if Python is available
 if ! command -v python3 >/dev/null 2>&1; then
     echo "Error: Python 3 is required for zsh-ai-assistant" >&2
     return 1
-fi
-
-# Use system Python if virtual environment not found
-if [[ ! -f "${ZSH_AI_ASSISTANT_PYTHON_BIN}" ]]; then
-    ZSH_AI_ASSISTANT_PYTHON_BIN="python3"
 fi
 
 zsh_ai_assistant_detect_plugin_dir() {
