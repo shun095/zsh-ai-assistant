@@ -4,9 +4,6 @@
 # This is required for all spec files
 Include ./spec/spec_helper.sh
 
-# Source the plugin to make functions available
-source ../../zsh-ai-assistant.plugin.zsh
-
 # Test suite for directory detection functionality
 Describe 'zsh_ai_assistant_detect_plugin_dir()'
   # Test 1: Basic directory detection when script is in plugin directory

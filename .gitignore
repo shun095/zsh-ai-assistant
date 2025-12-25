@@ -54,6 +54,9 @@ pytest_cache/
 shellspec
 shellspec-repo/
 
+# ShellSpec coverage
+coverage/
+
 # Documentation and notes
 NOTES*
 TEMP*
