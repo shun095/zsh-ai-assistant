@@ -149,6 +149,31 @@ uv run mypy src tests
 * Perform external research when required and provide evidence when possible.
 * **Before producing final output**, run tests, formatting, type checks, clean up unnecessary documents or snippets.
 
+### 9.1 Commenting Rules (Strictly Enforced)
+
+**General Rule**: Do not write comments in the code. Remove existing comments unless they fall under the allowed categories below.
+
+#### Allowed Comments (Only These Are Permitted)
+
+* JSDoc/Javadoc for:
+  * Files
+  * Public functions or public APIs
+* Comments explaining why a specific implementation is necessary when the reason is not self-evident within the same file.
+* Comments required for correct execution:
+  * Shebangs (e.g., `#!/usr/bin/env node`)
+
+#### Forbidden Comments (Must Be Removed)
+
+* Comments explaining what the code does (redundant).
+* Comments that are obvious from reading the code.
+* Comments explaining why something is done when the reason is clear within the same file.
+* JSDoc/Javadoc for private functions or internal helpers.
+* Speculative, inaccurate, or non-fact-based explanations.
+* TODO, FIXME, or any comment that postpones work (all work must be completed immediately).
+* Comments disabling or suppressing linters or tooling.
+
+**Enforcement**: No exceptions. Any unnecessary or disallowed comments will result in code rejection during review.
+
 ---
 
 ## 10. CI Requirements
