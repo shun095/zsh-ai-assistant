@@ -34,13 +34,9 @@ jobs:
         run: |
           uv run pytest tests/python/ -v
 
-      - name: Run integration tests
-        run: |
-          uv run pytest tests/integration/ -v -s
-
       - name: Install shellspec
         run: |
-          sudo apt-get install -y shellspec
+          curl -fsSL https://git.io/shellspec | sh -s -- -y
 
       - name: Install kcov
         run: |
@@ -49,3 +45,7 @@ jobs:
       - name: Run shell tests with coverage
         run: |
           cd tests/shell && shellspec --shell zsh --kcov --kcov-options "--include-path=../../src/,../../zsh-ai-assistant.plugin.zsh --include-pattern=.zsh,.sh"
+
+      - name: Run integration tests
+        run: |
+          uv run pytest tests/integration/ -v -s
