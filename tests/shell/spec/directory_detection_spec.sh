@@ -116,5 +116,22 @@ Describe 'zsh_ai_assistant_check_for_comment()'
     When call zsh_ai_assistant_check_for_comment "#   "
     The status should be failure
   End
-End
 
+  # Test 7: Detect multiline prompt with comment on first line
+  It 'should not detect multiline prompt starting with comment'
+    When call zsh_ai_assistant_check_for_comment $'# Python code\nprint(\'hello\')'
+    The status should be failure
+  End
+
+  # Test 8: Detect multiline prompt with comment in middle
+  It 'should not detect multiline prompt containing comment'
+    When call zsh_ai_assistant_check_for_comment $'print(\'start\')\n# This is a comment\nprint(\'end\')'
+    The status should be failure
+  End
+
+  # Test 9: Detect single line comment (should still work)
+  It 'should still detect single line comment'
+    When call zsh_ai_assistant_check_for_comment "# list files"
+    The status should be successful
+  End
+End
