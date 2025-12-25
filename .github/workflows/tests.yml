@@ -9,7 +9,10 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +29,8 @@ jobs:
         run: |
           uv sync --all-extras
 
-      - name: Install zsh
+      - name: Install zsh (Linux only)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update && sudo apt-get install -y zsh
 
@@ -38,7 +42,8 @@ jobs:
         run: |
           curl -fsSL https://git.io/shellspec | sh -s -- -y
 
-      - name: Install kcov
+      - name: Install kcov (Linux only)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libssl-dev libcurl4-openssl-dev libelf-dev libstdc++-12-dev zlib1g-dev libdw-dev libiberty-dev
@@ -50,9 +55,15 @@ jobs:
           sudo make install
           sudo ldconfig
 
-      - name: Run shell tests with coverage
+      - name: Run shell tests with coverage (Linux only)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           cd tests/shell && shellspec --shell zsh --kcov --kcov-options "--include-path=../../src/,../../zsh-ai-assistant.plugin.zsh --include-pattern=.zsh,.sh"
+
+      - name: Run shell tests without coverage (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd tests/shell && shellspec --shell zsh
 
       - name: Run integration tests
         run: |
