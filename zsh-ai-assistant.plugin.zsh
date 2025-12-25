@@ -39,6 +39,12 @@ zsh_ai_assistant_detect_plugin_dir() {
 zsh_ai_assistant_check_for_comment() {
     local line="$1"
     
+    # Check if the input contains newlines (multiline input)
+    if [[ "$line" == *$'\n'* ]]; then
+        # This is a multiline input, don't process with AI
+        return 1
+    fi
+    
     local trimmed_line="${line#\"${line%%[![:space:]]*}\"}"
     if [[ "$trimmed_line" =~ ^[[:space:]]*# ]]; then
         # Found a comment, check if there's content after #
