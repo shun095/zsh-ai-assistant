@@ -57,8 +57,9 @@ Describe 'zsh_ai_assistant_transform_command()'
     # Call transform command
     When run zsh_ai_assistant_transform_command "# list files"
     
-    # Should succeed
+    # Should succeed and show loading animation
     The status should be successful
+    The output should include "Generating command."
   End
 
   # Test 2: Transform command with empty input
@@ -68,6 +69,7 @@ Describe 'zsh_ai_assistant_transform_command()'
     When run zsh_ai_assistant_transform_command ""
     
     The status should be successful
+    The output should include "Generating command."
   End
 
   # Test 3: Transform command with non-comment input
@@ -77,5 +79,6 @@ Describe 'zsh_ai_assistant_transform_command()'
     When run zsh_ai_assistant_transform_command "ls -la"
     
     The status should be successful
+    The output should include "Generating command."
   End
 End

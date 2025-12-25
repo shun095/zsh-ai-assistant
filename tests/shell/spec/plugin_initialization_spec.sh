@@ -68,10 +68,11 @@ Describe 'zle widget binding'
     unset ZSH_VERSION
     
     # Source plugin
-    When run source ../../zsh-ai-assistant.plugin.zsh
+    When run source ../../zsh-ai-assistant.plugin.zsh 2>&1
     
-    # Should not fail
+    # Should not fail and output error message
     The status should be successful
+    The stderr should include "zle is not available"
     
     # Restore ZSH_VERSION
     export ZSH_VERSION="5.9"
