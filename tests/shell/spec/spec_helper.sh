@@ -5,6 +5,8 @@
 # so it is better to set them here.
 # set -eu
 
+
+
 # Source the plugin to make functions available
 # This is done at the top level so that kcov can instrument the functions
 source ../../zsh-ai-assistant.plugin.zsh
