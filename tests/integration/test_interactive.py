@@ -62,12 +62,9 @@ class TestInteractive:
             # Merge stderr with stdout so pexpect can capture animation output
             # Use longer timeout for macOS setup
             timeout = 30 if sys.platform == "darwin" else 10
-            # Spawn zsh and merge stderr with stdout
-            self.child = pexpect.spawn("zsh -f", timeout=timeout, encoding="utf-8")
-            # Merge stderr into stdout for macOS compatibility
-            if sys.platform == "darwin":
-                self.child.stderr = self.child.stdout
-            # Merge stderr into stdout
+            # Spawn zsh with stderr merged into stdout using bash wrapper
+            # This ensures proper redirection on both Linux and macOS
+            self.child = pexpect.spawn("bash -c 'zsh -f 2>&1'", timeout=timeout, encoding="utf-8")
             self.child.setecho(False)
             self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
         # self.child.logfile_send = PexpectPrefixLogger("send: ", sys.stdout)
