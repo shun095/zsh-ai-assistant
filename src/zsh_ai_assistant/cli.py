@@ -176,12 +176,8 @@ def run_interactive_chat(test_mode: bool = False) -> None:
 
 def main() -> None:
     """Main entry point for CLI utilities."""
-    # Check if --test flag is present BEFORE removing it
-    test_mode = "--test" in sys.argv
-
-    # Remove --test flag if present to simplify argument parsing
-    if test_mode:
-        sys.argv.remove("--test")
+    # Check for test mode using environment variable
+    test_mode = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE") is not None
 
     try:
         if len(sys.argv) > 1 and sys.argv[1] == "command":

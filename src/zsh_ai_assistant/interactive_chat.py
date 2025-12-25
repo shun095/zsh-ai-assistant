@@ -104,10 +104,9 @@ class InteractiveChat:
 
 def main(test_mode: bool = False) -> None:
     """Main entry point for interactive chat."""
-    # Check if --test flag is present
-    if "--test" in sys.argv:
-        test_mode = True
-        sys.argv.remove("--test")
+    # Check for test mode using environment variable
+    if test_mode is False:  # Only check if not explicitly set
+        test_mode = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE") is not None
 
     try:
         chat = InteractiveChat(test_mode=test_mode)
