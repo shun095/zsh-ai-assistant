@@ -100,9 +100,10 @@ Describe 'zsh_ai_assistant_accept_line_wrapper()'
     }
     
     # Call wrapper
-    When run zsh_ai_assistant_accept_line_wrapper >/dev/null 2>&1
+    When run zsh_ai_assistant_accept_line_wrapper
     
     The status should be successful
+    The output should include "Generating command."
   End
 
   # Test 2: Wrapper should accept line for non-comment

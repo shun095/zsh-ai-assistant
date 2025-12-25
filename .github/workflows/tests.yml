@@ -52,7 +52,7 @@ jobs:
 
       - name: Run shell tests with coverage
         run: |
-          cd tests/shell && shellspec --shell zsh --no-warning-as-failure --kcov --kcov-options "--include-path=../../src/,../../zsh-ai-assistant.plugin.zsh --include-pattern=.zsh,.sh"
+          cd tests/shell && shellspec --shell zsh --kcov --kcov-options "--include-path=../../src/,../../zsh-ai-assistant.plugin.zsh --include-pattern=.zsh,.sh"
 
       - name: Run integration tests
         run: |
