@@ -77,7 +77,7 @@ zsh_ai_assistant_background_animation() {
     # Check if we should use plain text mode (for tests or macOS)
     # This avoids terminal control code issues with pexpect on macOS
     local use_plain_text=0
-    if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+    if [[ -n "${ZSH_AI_ASSISTANT_TEST_MODE:-}" ]] || [[ "$OSTYPE" == "darwin"* ]] || [[ "${RUNNER_OS:-}" == "macOS" ]]; then
         use_plain_text=1
         echo "DEBUG: Using plain text animation mode" >&2
     fi
