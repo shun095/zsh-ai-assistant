@@ -73,6 +73,9 @@ class TestInteractive:
             self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
         # self.child.logfile_send = PexpectPrefixLogger("send: ", sys.stdout)
         self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
+        
+        # DEBUG: Log platform information
+        print(f"\n=== DEBUG: Platform = {sys.platform} ===\n", file=sys.stderr)
         # Type narrowing - child is guaranteed to be pexpect.spawn here
         assert self.child is not None
         child_spawn: pexpect.spawn = self.child
@@ -134,12 +137,31 @@ class TestInteractive:
         child_spawn: pexpect.spawn = self.child
         # Test that loading message is displayed during command generation
         child_spawn.send("# list current directory files\r")
+        
+        # DEBUG: Wait a moment and log what's in the buffer
+        import time
+        time.sleep(1)
+        buffer_content = child_spawn.buffer
+        print(f"\n=== DEBUG: Buffer after sending command (first 500 chars) ===\n{repr(buffer_content[:500])}\n", file=sys.stderr)
+        
         # Wait for the loading message to appear in the buffer
         # The animation cycles through flame characters, so we check for any flame character
         # Animation output is on stderr for background processes
         # Use longer timeout for macOS
         timeout = 30 if sys.platform == "darwin" else 10
+        
+        # DEBUG: Try to match simpler patterns first
+        try:
+            child_spawn.expect("Generating command", timeout=2)
+            print(f"\n=== DEBUG: Found 'Generating command' (without flame) ===\n", file=sys.stderr)
+        except pexpect.TIMEOUT:
+            print(f"\n=== DEBUG: Did not find 'Generating command' (without flame) ===\n", file=sys.stderr)
+        
         child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
+        
+        # DEBUG: Log buffer after expecting animation
+        print(f"\n=== DEBUG: Buffer after animation expect (first 500 chars) ===\n{repr(child_spawn.buffer[:500])}\n", file=sys.stderr)
+        
         # Wait for the command to be transformed to 'ls'
         child_spawn.expect("ls")
         try:
@@ -167,7 +189,18 @@ class TestInteractive:
         # Wait for the first flame character (any flame character)
         # Use longer timeout for macOS
         timeout = 30 if sys.platform == "darwin" else 10
+        
+        # DEBUG: Try simpler pattern first
+        try:
+            child_spawn.expect("Generating command", timeout=2)
+            print(f"\n=== DEBUG: Found 'Generating command' (without flame) ===\n", file=sys.stderr)
+        except pexpect.TIMEOUT:
+            print(f"\n=== DEBUG: Did not find 'Generating command' (without flame) ===\n", file=sys.stderr)
+        
         child_spawn.expect(re.compile(r"⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏ Generating command..."), timeout=timeout)
+        
+        # DEBUG: Log buffer content
+        print(f"\n=== DEBUG: Buffer after first animation frame (first 500 chars) ===\n{repr(child_spawn.buffer[:500])}\n", file=sys.stderr)
 
         # Wait for at least 2 more different flame characters to verify animation
         # This ensures the animation is actually cycling, not just showing one frame
@@ -238,6 +271,14 @@ class TestInteractive:
         child_spawn.send('uv () { echo "failed reason message" >&2; return 1 }\r')
         # Test that loading message is displayed during command generation
         child_spawn.send("# list current directory files\r")
+        
+        # DEBUG: Try simpler pattern first
+        try:
+            child_spawn.expect("Generating command", timeout=2)
+            print(f"\n=== DEBUG: Found 'Generating command' (without flame) ===\n", file=sys.stderr)
+        except pexpect.TIMEOUT:
+            print(f"\n=== DEBUG: Did not find 'Generating command' (without flame) ===\n", file=sys.stderr)
+        
         # Wait for the loading message to appear in the buffer
         # The animation cycles through flame characters, so we check for any flame character
         # Use longer timeout for macOS
@@ -262,6 +303,14 @@ class TestInteractive:
         child_spawn: pexpect.spawn = self.child
         # Test that loading message is displayed during command generation
         child_spawn.send("# return api error\r")
+        
+        # DEBUG: Try simpler pattern first
+        try:
+            child_spawn.expect("Generating command", timeout=2)
+            print(f"\n=== DEBUG: Found 'Generating command' (without flame) ===\n", file=sys.stderr)
+        except pexpect.TIMEOUT:
+            print(f"\n=== DEBUG: Did not find 'Generating command' (without flame) ===\n", file=sys.stderr)
+        
         # Wait for the loading message to appear in the buffer (any flame character)
         # Use longer timeout for macOS
         timeout = 30 if sys.platform == "darwin" else 10
@@ -408,6 +457,14 @@ class TestInteractive:
 
         # Test command generation from /tmp directory
         child_spawn.send("# list files in current directory\r")
+        
+        # DEBUG: Try simpler pattern first
+        try:
+            child_spawn.expect("Generating command", timeout=2)
+            print(f"\n=== DEBUG: Found 'Generating command' (without flame) ===\n", file=sys.stderr)
+        except pexpect.TIMEOUT:
+            print(f"\n=== DEBUG: Did not find 'Generating command' (without flame) ===\n", file=sys.stderr)
+        
         # Wait for the loading message (any flame character)
         # Use longer timeout for macOS
         timeout = 30 if sys.platform == "darwin" else 10

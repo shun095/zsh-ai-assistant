@@ -71,26 +71,43 @@ zsh_ai_assistant_background_animation() {
     local index=0
     local index_sub=0
     
+    # DEBUG: Log that animation started
+    echo "DEBUG: Animation started" >&2
+    
     while true; do
         index=$(( (index) % flame_count + 1 ))
         index_sub=$(( (index_sub) % flame_sub_count + 1 ))
         echo -ne "\033[2K\033[G"
         echo -ne "${loading_flames[$index]} Generating command${loading_flames_sub[$index_sub]}\r"
+        
+        # DEBUG: Log each frame
+        echo "DEBUG: Animation frame: ${loading_flames[$index]}" >&2
+        
         sleep 0.1
     done
 }
 
 # Show loading animation
 zsh_ai_assistant_show_loading() {
+    # DEBUG: Log that show_loading was called
+    echo "DEBUG: show_loading called" >&2
+    
     setopt no_notify no_monitor
     trap zsh_ai_assistant_hide_loading INT
     zsh_ai_assistant_background_animation &
     zsh_ai_assistant_animation_pid=$!
+    
+    # DEBUG: Log animation PID
+    echo "DEBUG: Animation PID = $zsh_ai_assistant_animation_pid" >&2
 }
 
 # Hide loading animation
 zsh_ai_assistant_hide_loading() {
+    # DEBUG: Log that hide_loading was called
+    echo "DEBUG: hide_loading called" >&2
+    
     if [[ -n "$zsh_ai_assistant_animation_pid" ]]; then
+        echo "DEBUG: Killing animation PID = $zsh_ai_assistant_animation_pid" >&2
         kill "$zsh_ai_assistant_animation_pid" 2>/dev/null || true
         wait "$zsh_ai_assistant_animation_pid"
     fi
@@ -107,6 +124,9 @@ zsh_ai_assistant_generate_command() {
     local stdout_file=$(mktemp)
     local stderr_file=$(mktemp)
     
+    # DEBUG: Log that generate_command was called
+    echo "DEBUG: generate_command called with comment: $comment" >&2
+    
     local original_dir=$(pwd)
     
     cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
@@ -119,11 +139,21 @@ zsh_ai_assistant_generate_command() {
         test_flag="--test"
     fi
     
+    echo "DEBUG: Running: uv run python ${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py $test_flag command \"$comment\"" >&2
     uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" $test_flag command "$comment" > "$stdout_file" 2> "$stderr_file"
     
     cd "$original_dir" >/dev/null 2>&1 || true
     
     local uv_exit_code=$?
+    
+    # DEBUG: Log exit code and file contents
+    echo "DEBUG: uv exit code = $uv_exit_code" >&2
+    if [[ -f "$stdout_file" ]]; then
+        echo "DEBUG: stdout_file contents: $(cat "$stdout_file")" >&2
+    fi
+    if [[ -f "$stderr_file" ]]; then
+        echo "DEBUG: stderr_file contents: $(cat "$stderr_file")" >&2
+    fi
     
     if [[ -f "$stdout_file" ]]; then
         generated_command=$(cat "$stdout_file")
@@ -151,12 +181,18 @@ zsh_ai_assistant_generate_command() {
 zsh_ai_assistant_transform_command() {
     local prompt="$1"
     
+    # DEBUG: Log that transform_command was called
+    echo "DEBUG: transform_command called with prompt: $prompt" >&2
+    
     # Phase 1: Show animation
     zsh_ai_assistant_show_loading
     
     # Phase 2: Generate command
     local generated_command=""
     generated_command=$(zsh_ai_assistant_generate_command "$prompt")
+    
+    # DEBUG: Log generated command
+    echo "DEBUG: generated_command = $generated_command" >&2
     
     # Phase 3: Hide animation
     zsh_ai_assistant_hide_loading
