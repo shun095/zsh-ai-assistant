@@ -77,7 +77,7 @@ The plugin uses the following environment variables:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | Your OpenAI API key | Required |
-| `OPENAI_BASE_URL` | Base URL for OpenAI-compatible API | `https://api.openai.com/v1` |
+| `OPENAI_BASE_URL` | Base URL for OpenAI-compatible API | `http://localhost:8080/v1` |
 | `AI_MODEL` | AI model to use | `gpt-3.5-turbo` |
 | `AI_TEMPERATURE` | Sampling temperature (0-1) | `0.7` |
 | `AI_MAX_TOKENS` | Maximum tokens in response | `1000` |

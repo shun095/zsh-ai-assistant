@@ -56,7 +56,7 @@ class TestAIConfig:
 
         # Since base_url has a default, this is actually valid
         assert config.is_valid is True
-        assert config.base_url == "https://api.openai.com/v1"
+        assert config.base_url == "http://localhost:8080/v1"
 
     def test_invalid_configuration_without_both_api_key_and_base_url(  # type: ignore[no-untyped-def]
         self, reset_env
@@ -83,7 +83,7 @@ class TestAIConfig:
 
         config = AIConfig()
 
-        assert config.base_url == "https://api.openai.com/v1"
+        assert config.base_url == "http://localhost:8080/v1"
 
     def test_default_model(self, reset_env) -> None:  # type: ignore[no-untyped-def]
         """Test default model when not specified."""
