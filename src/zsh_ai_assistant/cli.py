@@ -5,7 +5,7 @@ import json
 import os
 import sys
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable, TypeVar
 
 # Add the src directory to Python path to ensure module can be imported
 # This allows the script to be run from any directory
@@ -21,15 +21,27 @@ from zsh_ai_assistant.interactive_chat import InteractiveChat  # noqa: E402
 # Get logger
 logger = logging.getLogger(__name__)
 
+# Type variable for generic service methods
+T = TypeVar("T")
 
-def generate_command(prompt: str, test_mode: bool = False) -> str:
-    """Generate a shell command from a natural language prompt."""
+
+def _get_ai_service(test_mode: bool = False) -> LangChainAIService:
+    """Create and return an AI service instance with common setup.
+
+    Args:
+        test_mode: If True, use mock client for testing
+
+    Returns:
+        Configured AI service instance
+
+    Raises:
+        SystemExit: If configuration is invalid and not in test mode
+    """
     # Load configuration
     config = AIConfig()
 
     # Setup logging based on config
     setup_logging(config.debug)
-    logger.debug("Generate command called with prompt: %s", prompt)
     logger.debug("Configuration: %s", config)
 
     # Normal mode: require valid configuration
@@ -45,18 +57,47 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     logger.info("Creating AI service")
     service = LangChainAIService(config, test_mode=test_mode)
 
+    return service
+
+
+def _execute_service_method(service_method: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    """Execute a service method with error handling.
+
+    Args:
+        service_method: The service method to execute
+        *args: Positional arguments for the method
+        **kwargs: Keyword arguments for the method
+
+    Returns:
+        The result of the service method
+
+    Raises:
+        SystemExit: If an error occurs during execution
+    """
     try:
-        # Generate command
-        logger.info("Generating command from prompt")
-        command = service.generate_command(prompt)
-        logger.debug("Generated command: %s", command)
-        return command.strip()
+        result = service_method(*args, **kwargs)
+        logger.debug("Service method result: %s", result)
+        return result
     except Exception as e:
+        logger.error("Error executing service method: %s", e)
         # Return error message as a commented line so zsh plugin knows not to execute it
-        logger.error("Error generating command: %s", e)
         error_message = f"# Error: {e}"
         print(error_message)
         sys.exit(1)
+
+
+def generate_command(prompt: str, test_mode: bool = False) -> str:
+    """Generate a shell command from a natural language prompt."""
+    logger.debug("Generate command called with prompt: %s", prompt)
+
+    # Create AI service
+    service = _get_ai_service(test_mode)
+
+    # Generate command
+    logger.info("Generating command from prompt")
+    command = _execute_service_method(service.generate_command, prompt)
+
+    return command.strip()
 
 
 def chat(messages_json: str, test_mode: bool = False) -> str:
@@ -70,9 +111,6 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
 
     Returns response content only (not wrapped in JSON).
     """
-    # Load configuration first to setup logging
-    config = AIConfig()
-    setup_logging(config.debug)
     logger.debug("Chat called with messages_json length: %d", len(messages_json))
 
     if not messages_json:
@@ -88,29 +126,14 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
         print(f"Error: Invalid JSON format: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Normal mode: require valid configuration
-    if not test_mode and not config.is_valid:
-        logger.error("Invalid AI configuration")
-        print(
-            "Error: Invalid AI configuration. Please set " "OPENAI_API_KEY and OPENAI_BASE_URL",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # Create AI service
+    service = _get_ai_service(test_mode)
 
-    # Create AI service with test mode
-    logger.info("Creating AI service")
-    service = LangChainAIService(config, test_mode=test_mode)
+    # Generate response using OpenAI format
+    logger.info("Generating chat response")
+    response = _execute_service_method(service.chat, messages)
 
-    try:
-        # Generate response using OpenAI format
-        logger.info("Generating chat response")
-        response = service.chat(messages)
-        logger.debug("Generated response: %s", response)
-        return response.strip()
-    except Exception as e:
-        logger.error("Error generating chat response: %s", e)
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    return response.strip()
 
 
 def history_to_json(history_lines: str) -> str:
@@ -155,6 +178,20 @@ def convert_to_openai_format(messages: List[Dict[str, Any]]) -> List[Dict[str, A
             openai_messages.append(msg)
 
     return openai_messages
+
+
+def translate(text: str, target_language: str, test_mode: bool = False) -> str:
+    """Translate text to a target language."""
+    logger.debug("Translate called with text: %s, target_language: %s", text, target_language)
+
+    # Create AI service
+    service = _get_ai_service(test_mode)
+
+    # Translate text
+    logger.info("Translating text")
+    translation = _execute_service_method(service.translate, text, target_language)
+
+    return translation.strip()
 
 
 def run_interactive_chat(test_mode: bool = False) -> None:
@@ -206,6 +243,19 @@ def main() -> None:
             # Interactive chat mode
             run_interactive_chat(test_mode)
 
+        elif len(sys.argv) > 1 and sys.argv[1] == "translate":
+            # Translation mode
+            if len(sys.argv) < 3:
+                print("Usage: translate <target_language> [text]", file=sys.stderr)
+                sys.exit(1)
+            target_language = sys.argv[2]
+            if len(sys.argv) > 3:
+                text = sys.argv[3]
+            else:
+                text = sys.stdin.read().strip()
+            result = translate(text, target_language, test_mode)
+            print(result)
+
         else:
             print("Usage:", file=sys.stderr)
             print("  command <prompt> - Generate command from prompt", file=sys.stderr)
@@ -215,6 +265,7 @@ def main() -> None:
                 file=sys.stderr,
             )
             print("  interactive - Run interactive chat session", file=sys.stderr)
+            print("  translate <target_language> <text> - Translate text to target language", file=sys.stderr)
             sys.exit(1)
     except Exception as e:
         print(f"Error: {e}")

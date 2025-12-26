@@ -222,3 +222,35 @@ fi
 aiask() {
     zsh_ai_assistant_chat
 }
+
+# Add aitrans command
+aitrans() {
+    local text=""
+    local target_language="japanese"
+    
+    # Check if text is provided as first argument
+    if [[ $# -gt 0 ]]; then
+        text="$*"
+    # Read text to translate from stdin or prompt
+    elif [[ -p /dev/stdin ]]; then
+        text=$(cat)
+    else
+        echo "Text to translate (Ctrl+D to finish):"
+        # Read multiline input from terminal
+        while IFS= read -r line; do
+            text+="$line"$'\n'
+        done
+    fi
+    
+    local original_dir=$(pwd)
+    
+    cd "${ZSH_AI_ASSISTANT_DIR}" >/dev/null 2>&1 || {
+        echo "# Error: Could not change to plugin directory" >&2
+        return 1
+    }
+    
+    # Call Python translation function
+    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" translate "$target_language" "$text"
+    
+    cd "$original_dir" >/dev/null 2>&1 || true
+}

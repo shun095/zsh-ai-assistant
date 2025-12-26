@@ -23,6 +23,25 @@ uv() {
       return 0
     elif [[ "$4" == "interactive" ]]; then
       return 0
+    elif [[ "$4" == "translate" ]]; then
+      local target_language="${5:-japanese}"
+      local text="${6:-}"
+      
+      # Mock translation responses
+      case "$text" in
+        *"Hello"*)
+          echo "こんにちは"
+          return 0
+          ;;
+        *"How are you"*)
+          echo "元気です"
+          return 0
+          ;;
+        *)
+          echo "$text"
+          return 0
+          ;;
+      esac
     else
       return 1
     fi

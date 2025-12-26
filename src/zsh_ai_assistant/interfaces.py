@@ -17,6 +17,11 @@ class AIServiceInterface(ABC):
         """Generate a response from a chat history."""
         pass
 
+    @abstractmethod
+    def translate(self, text: str, target_language: str) -> str:
+        """Translate text to a target language."""
+        pass
+
 
 class ChatHistoryInterface(ABC):
     """Interface for chat history management."""

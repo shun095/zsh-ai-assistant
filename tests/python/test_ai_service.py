@@ -51,6 +51,68 @@ class TestLangChainAIService:
         with pytest.raises(ValueError, match="Invalid AI configuration"):
             LangChainAIService(config)
 
+    def test_translate_text_to_japanese(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translating text to Japanese."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        result = service.translate("Hello", "japanese")
+
+        assert result == "こんにちは"
+
+    def test_translate_text_to_english(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translating text to English."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        result = service.translate("こんにちは", "english")
+
+        assert result == "Hello"
+
+    def test_translate_text_to_other_language(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translating text to other languages."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        result = service.translate("Hello world", "french")
+
+        assert result == "[Translation to french: Hello world]"
+
+    def test_translate_multiline_text(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translating multiline text."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        multiline_text = "The quick brown fox\nJumps over the lazy dog"
+        result = service.translate(multiline_text, "japanese")
+
+        expected = "[Japanese translation of: The quick brown fox\nJumps over the lazy dog]"
+        assert result == expected
+
+    def test_translate_empty_text(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translating empty text."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        config = AIConfig()
+        service = LangChainAIService(config, test_mode=True)
+
+        result = service.translate("", "japanese")
+
+        assert result == "[Japanese translation of: ]"
+
     def test_generate_command_with_empty_prompt(  # type: ignore[no-untyped-def]
         self, reset_env, mock_langchain_client
     ) -> None:
