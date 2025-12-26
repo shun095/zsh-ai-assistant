@@ -80,7 +80,9 @@ def _execute_service_method(service_method: Callable[..., T], *args: Any, **kwar
         return result
     except Exception as e:
         logger.error("Error executing service method: %s", e)
-        print(f"Error: {e}", file=sys.stderr)
+        # Return error message as a commented line so zsh plugin knows not to execute it
+        error_message = f"# Error: {e}"
+        print(error_message)
         sys.exit(1)
 
 
