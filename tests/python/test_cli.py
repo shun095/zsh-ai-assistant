@@ -6,7 +6,7 @@ import json
 from io import StringIO
 from unittest.mock import Mock, patch, MagicMock
 import pytest
-from zsh_ai_assistant.cli import generate_command, chat, history_to_json, main, convert_to_openai_format
+from zsh_ai_assistant.cli import generate_command, chat, history_to_json, main, convert_to_openai_format, translate
 from typing import List, Dict, Any
 
 
@@ -305,6 +305,59 @@ class TestCLIMain:
         captured = capsys.readouterr()
         assert "test command" in captured.out
 
+    def test_main_with_translate_arg(self, reset_env, capsys) -> None:  # type: ignore[no-untyped-def]
+        """Test main with translate arg."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        with patch("zsh_ai_assistant.cli.translate") as mock_translate:
+            mock_translate.return_value = "こんにちは"
+
+            # Simulate command line arguments
+            with patch.object(sys, "argv", ["cli", "translate", "japanese", "Hello"]):
+                main()
+
+            mock_translate.assert_called_once_with("Hello", "japanese", False)
+
+            # Check output
+            captured = capsys.readouterr()
+            assert captured.out.strip() == "こんにちは"
+
+    def test_main_with_translate_arg_invalid_usage(self, capsys) -> None:  # type: ignore[no-untyped-def]
+        """Test main with translate arg but missing arguments."""
+        with patch.object(sys, "argv", ["cli", "translate"]):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+
+        assert exc_info.value.code == 1
+
+        # Check error output
+        captured = capsys.readouterr()
+        assert "Usage:" in captured.err
+
+    def test_main_with_translate_arg_multiline_stdin(self, reset_env, capsys) -> None:  # type: ignore[no-untyped-def]
+        """Test main with translate arg and multiline stdin input."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        with patch("zsh_ai_assistant.cli.translate") as mock_translate:
+            mock_translate.return_value = "こんにちは\n世界"
+
+            # Simulate command line arguments with only target language
+            # and multiline text from stdin
+            with patch.object(sys, "argv", ["cli", "translate", "japanese"]):
+                with patch(
+                    "sys.stdin",
+                    MagicMock(read=MagicMock(return_value="Hello\nWorld\n")),
+                ):
+                    main()
+
+            mock_translate.assert_called_once_with("Hello\nWorld", "japanese", False)
+
+            # Check output
+            captured = capsys.readouterr()
+            assert captured.out.strip() == "こんにちは\n世界"
+
 
 class TestMessageConversion:
     """Test cases for message format conversion."""
@@ -392,3 +445,78 @@ class TestMessageConversion:
             {"role": "assistant", "content": "Hi there!", "tool_calls": []},
         ]
         assert result == expected
+
+
+class TestCLITranslate:
+    """Test cases for translate function."""
+
+    def test_translate_with_valid_config(  # type: ignore[no-untyped-def]
+        self, reset_env, mock_langchain_client
+    ) -> None:
+        """Test translate with valid config."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        with patch("zsh_ai_assistant.cli.LangChainAIService") as mock_service_class:
+            mock_service = Mock()
+            mock_service.translate.return_value = "こんにちは"
+            mock_service_class.return_value = mock_service
+
+            result = translate("Hello", "japanese")
+
+            assert result == "こんにちは"
+            mock_service.translate.assert_called_once_with("Hello", "japanese")
+
+    def test_translate_with_invalid_config(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translate with invalid config."""
+        # No API key set
+        with pytest.raises(SystemExit) as exc_info:
+            translate("Hello", "japanese")
+
+        assert exc_info.value.code == 1
+
+    def test_translate_handles_exception(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translate handles exceptions gracefully."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        with patch("zsh_ai_assistant.cli.LangChainAIService") as mock_service_class:
+            mock_service = Mock()
+            mock_service.translate.side_effect = Exception("Test error")
+            mock_service_class.return_value = mock_service
+
+            with pytest.raises(SystemExit) as exc_info:
+                translate("Hello", "japanese")
+
+            assert exc_info.value.code == 1
+
+    def test_translate_with_multiline_text(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translate with multiline text."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        with patch("zsh_ai_assistant.cli.LangChainAIService") as mock_service_class:
+            mock_service = Mock()
+            mock_service.translate.return_value = "こんにちは\n世界"
+            mock_service_class.return_value = mock_service
+
+            multiline_text = "Hello\nWorld"
+            result = translate(multiline_text, "japanese")
+
+            assert result == "こんにちは\n世界"
+            mock_service.translate.assert_called_once_with(multiline_text, "japanese")
+
+    def test_translate_with_empty_text(self, reset_env) -> None:  # type: ignore[no-untyped-def]
+        """Test translate with empty text."""
+        os.environ["OPENAI_API_KEY"] = "test-api-key"
+        os.environ["OPENAI_BASE_URL"] = "https://api.example.com"
+
+        with patch("zsh_ai_assistant.cli.LangChainAIService") as mock_service_class:
+            mock_service = Mock()
+            mock_service.translate.return_value = ""
+            mock_service_class.return_value = mock_service
+
+            result = translate("", "japanese")
+
+            assert result == ""
+            mock_service.translate.assert_called_once_with("", "japanese")

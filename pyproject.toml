@@ -82,4 +82,8 @@ mypy_path = "src"
 explicit_package_bases = true
 namespace_packages = true
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
 
