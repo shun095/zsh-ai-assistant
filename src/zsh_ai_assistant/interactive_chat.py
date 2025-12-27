@@ -55,13 +55,26 @@ class InteractiveChat:
         self.add_user_message(user_input)
 
         try:
-            # Generate response using the AI service
-            logger.info("Generating AI response")
-            response = self.service.chat(self.chat_history)
+            # Generate response using the AI service with streaming
+            logger.info("Generating AI response with streaming")
+            # Use streaming for better user experience
+            # Print AI: prefix first
+            print("AI: ", end="", flush=True)
+
+            response_parts: list[str] = []
+            for chunk in self.service.chat_stream(self.chat_history):
+                response_parts.append(chunk)
+                # Print chunk as it arrives for streaming effect
+                print(chunk, end="", flush=True)
+
+            response = "".join(response_parts).strip()
 
             # Add assistant response to history
             logger.debug("AI response: %s", response)
             self.add_assistant_message(response)
+
+            # Print newline after AI response to separate from next prompt
+            print(flush=True)
 
             return response
         except Exception as e:
@@ -89,16 +102,13 @@ class InteractiveChat:
                     break
 
                 # Generate response
-                response = self.generate_response(user_input)
-
-                # Display AI response
-                print(f"AI: {response}")
+                self.generate_response(user_input)
 
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"\nError: {e}")
                 break
 
 

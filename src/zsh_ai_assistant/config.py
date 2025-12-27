@@ -30,8 +30,12 @@ def setup_logging(debug: bool = False) -> logging.Logger:
     # Clear any existing handlers to avoid duplicate logs
     logger.handlers.clear()
 
-    # Create console handler
-    handler = logging.StreamHandler()
+    # Create file handler instead of console handler
+    log_dir = os.path.expanduser("~/.zsh/zsh-ai-assistant/logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "zsh-ai-assistant.log")
+
+    handler = logging.FileHandler(log_file)
     handler.setLevel(logging.DEBUG if debug else logging.INFO)
 
     # Create formatter

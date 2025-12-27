@@ -100,7 +100,7 @@ def generate_command(prompt: str, test_mode: bool = False) -> str:
     return command.strip()
 
 
-def chat(messages_json: str, test_mode: bool = False) -> str:
+def chat(messages_json: str, test_mode: bool = False, stream: bool = True) -> str:
     """Generate a response from chat history.
 
     Expected input format (OpenAI API compatible):
@@ -109,9 +109,15 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
         {"role": "assistant", "content": "response"}
     ]
 
+    Args:
+        messages_json: JSON string containing chat history
+        test_mode: If True, use mock client for testing
+        stream: If True, use streaming response (default: True)
+
     Returns response content only (not wrapped in JSON).
     """
     logger.debug("Chat called with messages_json length: %d", len(messages_json))
+    logger.debug("Streaming mode: %s", stream)
 
     if not messages_json:
         logger.error("No chat history provided")
@@ -131,7 +137,21 @@ def chat(messages_json: str, test_mode: bool = False) -> str:
 
     # Generate response using OpenAI format
     logger.info("Generating chat response")
-    response = _execute_service_method(service.chat, messages)
+
+    if stream:
+        logger.info("Using streaming response")
+        try:
+            response_parts = []
+            for chunk in _execute_service_method(service.chat_stream, messages):
+                response_parts.append(chunk)
+            response = "".join(response_parts)
+        except Exception as e:
+            logger.error("Error in streaming chat: %s", e)
+            # Fallback to non-streaming if streaming fails
+            response = _execute_service_method(service.chat, messages)
+    else:
+        logger.info("Using non-streaming response")
+        response = _execute_service_method(service.chat, messages)
 
     return response.strip()
 
@@ -180,16 +200,42 @@ def convert_to_openai_format(messages: List[Dict[str, Any]]) -> List[Dict[str, A
     return openai_messages
 
 
-def translate(text: str, target_language: str, test_mode: bool = False) -> str:
-    """Translate text to a target language."""
+def translate(text: str, target_language: str, test_mode: bool = False, stream: bool = True) -> str:
+    """Translate text to a target language.
+
+    Args:
+        text: Text to translate
+        target_language: Target language
+        test_mode: If True, use mock client for testing
+        stream: If True, use streaming response (default: True)
+    """
     logger.debug("Translate called with text: %s, target_language: %s", text, target_language)
+    logger.debug("Streaming mode: %s", stream)
 
     # Create AI service
     service = _get_ai_service(test_mode)
 
     # Translate text
     logger.info("Translating text")
-    translation = _execute_service_method(service.translate, text, target_language)
+
+    if stream:
+        logger.info("Using streaming translation")
+        try:
+            translation_parts = []
+            for chunk in _execute_service_method(service.translate_stream, text, target_language):
+                translation_parts.append(chunk)
+                # Print chunk as it arrives for streaming effect
+                print(chunk, end="", flush=True)
+            translation = "".join(translation_parts)
+            # Print newline after translation to separate from next prompt
+            print(flush=True)
+        except Exception as e:
+            logger.error("Error in streaming translation: %s", e)
+            # Fallback to non-streaming if streaming fails
+            translation = _execute_service_method(service.translate, text, target_language)
+    else:
+        logger.info("Using non-streaming translation")
+        translation = _execute_service_method(service.translate, text, target_language)
 
     return translation.strip()
 
@@ -253,8 +299,12 @@ def main() -> None:
                 text = sys.argv[3]
             else:
                 text = sys.stdin.read().strip()
-            result = translate(text, target_language, test_mode)
-            print(result)
+            # Streaming is enabled by default when text is from stdin (len(sys.argv) == 3)
+            stream = len(sys.argv) == 3
+            result = translate(text, target_language, test_mode, stream=stream)
+            # Only print result if not in streaming mode (streaming prints as it goes)
+            if not stream:
+                print(result)
 
         else:
             print("Usage:", file=sys.stderr)

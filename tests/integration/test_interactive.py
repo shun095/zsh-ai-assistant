@@ -419,3 +419,54 @@ class TestInteractive:
         # Send another message
         child_spawn.sendline("quit")
         child_spawn.expect("%")
+
+    def test_translation_from_random_directory(self) -> None:
+        """Test normal case of translation (aitrans) from a random directory."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Change to a different directory (e.g., /tmp)
+        child_spawn.sendline("cd /tmp")
+        child_spawn.expect("%")
+
+        # Verify we're in /tmp
+        child_spawn.sendline("pwd")
+        child_spawn.expect("/tmp")
+        child_spawn.expect("%")
+
+        # Test translation from /tmp directory
+        child_spawn.sendline("aitrans")
+        child_spawn.expect("Text to translate")
+        child_spawn.sendline("hello")
+        child_spawn.sendcontrol("d")  # Send EOF
+
+        # Wait for translation to complete
+        # The translation should contain the translated text
+        child_spawn.expect(re.compile(r"こんにちは"), timeout=10)
+        child_spawn.expect("%")
+
+    def test_translation_with_stdin_input(self) -> None:
+        """Test translation with input from stdin."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Test translation with text provided via stdin
+        child_spawn.sendline("aitrans <<< 'hello world'")
+
+        # Wait for translation to complete
+        # The translation should contain the translated text
+        child_spawn.expect(re.compile(r"こんにちは世界"), timeout=10)
+        child_spawn.expect("%")
+
+    def test_translation_with_multiline_input(self) -> None:
+        """Test translation with multiline input."""
+        assert self.child is not None
+        child_spawn: pexpect.spawn = self.child
+
+        # Test translation with multiline text
+        child_spawn.sendline("aitrans <<< 'hello\nworld'")
+
+        # Wait for translation to complete
+        # The translation should contain the translated text
+        child_spawn.expect(re.compile(r"こんにちは"), timeout=10)
+        child_spawn.expect("%")

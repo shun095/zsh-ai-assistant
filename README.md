@@ -4,6 +4,7 @@ A zsh plugin that integrates AI assistance directly into your shell, allowing yo
 
 1. **Convert comments to commands**: Type a comment starting with `#` and press Enter to have it converted to the appropriate shell command
 2. **Interactive AI chat**: Use the `aiask` command to have interactive conversations with AI
+3. **Text translation**: Use the `aitrans` command to translate text to different languages
 
 ## Features
 
@@ -30,6 +31,33 @@ $ aiask
 Me: Where is the capital of France?
 AI: The capital of France is Paris. It's located in the northern part of the country and is known for its historical landmarks such as the Eiffel Tower, Louvre Museum, and Notre-Dame Cathedral.
 Me: 
+```
+
+### 3. Text Translation
+
+Use the `aitrans` command to translate text to different languages with real-time streaming:
+
+```zsh
+$ aitrans
+Text to translate (Ctrl+D to finish):
+hello world
+こんにちは世界
+```
+
+Or translate with stdin:
+
+```zsh
+$ echo "hello" | aitrans
+こんにちは
+```
+
+Or specify a target language:
+
+```zsh
+$ aitrans spanish
+Text to translate (Ctrl+D to finish):
+hello
+hola
 ```
 
 ## Installation

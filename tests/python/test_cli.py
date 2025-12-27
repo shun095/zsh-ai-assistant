@@ -317,7 +317,7 @@ class TestCLIMain:
             with patch.object(sys, "argv", ["cli", "translate", "japanese", "Hello"]):
                 main()
 
-            mock_translate.assert_called_once_with("Hello", "japanese", False)
+            mock_translate.assert_called_once_with("Hello", "japanese", False, stream=False)
 
             # Check output
             captured = capsys.readouterr()
@@ -352,11 +352,12 @@ class TestCLIMain:
                 ):
                     main()
 
-            mock_translate.assert_called_once_with("Hello\nWorld", "japanese", False)
+            mock_translate.assert_called_once_with("Hello\nWorld", "japanese", False, stream=True)
 
-            # Check output
-            captured = capsys.readouterr()
-            assert captured.out.strip() == "こんにちは\n世界"
+            # When streaming, the translate function prints directly, so we need to mock that
+            # Since we're mocking translate, it doesn't actually print, so output should be empty
+            # In streaming mode, output is printed by translate function, not captured here
+            # So we just verify the function was called correctly
 
 
 class TestMessageConversion:
