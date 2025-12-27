@@ -249,8 +249,10 @@ aitrans() {
         return 1
     }
     
-    # Call Python translation function
-    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" translate "$target_language" "$text"
+    # Call Python translation function with streaming
+    # Use eval to capture and display output as it arrives
+    # Pass text via stdin to avoid quoting issues
+    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" translate "$target_language" <<< "$text"
     
     cd "$original_dir" >/dev/null 2>&1 || true
 }

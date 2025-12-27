@@ -27,6 +27,11 @@ uv() {
       local target_language="${5:-japanese}"
       local text="${6:-}"
       
+      # If text not provided as argument, read from stdin
+      if [[ -z "$text" ]]; then
+        text=$(cat)
+      fi
+      
       # Mock translation responses
       case "$text" in
         *"Hello"*)

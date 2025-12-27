@@ -1,6 +1,6 @@
 """Mock implementations for testing."""
 
-from typing import List, Dict, Any, Callable, Optional
+from typing import List, Dict, Any, Callable, Optional, Iterator
 
 
 class MockClient:
@@ -47,6 +47,73 @@ class MockClient:
             return self._handle_translation_mode(messages)
         else:
             return self._handle_chat_mode(messages)
+
+    def stream(self, messages: List[Any]) -> Iterator[Any]:
+        """Stream mock responses for testing.
+
+        Args:
+            messages: List of message objects
+
+        Yields:
+            Response chunks (simulated streaming)
+        """
+        self.call_count += 1
+        self.calls.append(messages)
+
+        if self.response_callback:
+            response = self.response_callback(messages)
+            if hasattr(response, "content") and response.content:
+                # Simulate streaming by yielding the content in chunks
+                content = response.content
+                # Split into words or characters to simulate token streaming
+                chunks = content.split()
+                if chunks:
+                    current_chunk = ""
+                    for i, chunk in enumerate(chunks):
+                        current_chunk += chunk
+                        # Add space only if not the last chunk
+                        if i < len(chunks) - 1:
+                            current_chunk += " "
+                        yield type("obj", (object,), {"content": current_chunk})()
+                else:
+                    yield type("obj", (object,), {"content": content})()
+            return
+
+        # Check if invoke would raise an exception (for backward compatibility with tests)
+        if hasattr(self, "invoke") and hasattr(self.invoke, "side_effect") and self.invoke.side_effect:
+            raise self.invoke.side_effect
+
+        # Check mode based on system message content
+        mode = "chat"
+        if messages and hasattr(messages[0], "content") and messages[0].content:
+            system_content = messages[0].content.lower()
+            if "shell command generator" in system_content:
+                mode = "command"
+            elif "translation assistant" in system_content:
+                mode = "translation"
+
+        # Handle different modes by generating a response and streaming it
+        if mode == "command":
+            response = self._handle_command_mode(messages)
+        elif mode == "translation":
+            response = self._handle_translation_mode(messages)
+        else:
+            response = self._handle_chat_mode(messages)
+
+        if hasattr(response, "content") and response.content:
+            content = response.content
+            # Simulate streaming by yielding the content in chunks
+            chunks = content.split()
+            if chunks:
+                current_chunk = ""
+                for i, chunk in enumerate(chunks):
+                    current_chunk += chunk
+                    # Add space only if not the last chunk
+                    if i < len(chunks) - 1:
+                        current_chunk += " "
+                    yield type("obj", (object,), {"content": current_chunk})()
+            else:
+                yield type("obj", (object,), {"content": content})()
 
     def _handle_command_mode(self, messages: List[Any]) -> Any:
         """Handle command generation mode."""
@@ -148,7 +215,9 @@ class MockClient:
 
         # English to Japanese translations
         if target_lower == "japanese" or target_lower == "ja":
-            if "hello" in text_lower:
+            if "hello world" in text_lower:
+                return "こんにちは世界"
+            elif "hello" in text_lower:
                 return "こんにちは"
             elif "good morning" in text_lower:
                 return "おはようございます"
