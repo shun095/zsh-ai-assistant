@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import pexpect
 import sys
-import os
 from pathlib import Path
 import re
 from typing import Optional
@@ -57,14 +56,9 @@ class TestInteractive:
 
     def setup_method(self) -> None:
         """Setup method to run before each test method."""
-        # Initialize child if not already set
-        if self.child is None:
-            # Merge stderr with stdout so pexpect can capture animation output
-            self.child = pexpect.spawn("zsh -f", timeout=10, encoding="utf-8")
-            # Merge stderr into stdout
-            self.child.setecho(False)
-            self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
-        # self.child.logfile_send = PexpectPrefixLogger("send: ", sys.stdout)
+        # Always create a fresh zsh process for each test to avoid state leakage
+        self.child = pexpect.spawn("zsh -f", timeout=10, encoding="utf-8")
+        self.child.setecho(False)
         self.child.logfile_read = PexpectPrefixLogger("read: ", sys.stdout)
         # Type narrowing - child is guaranteed to be pexpect.spawn here
         assert self.child is not None
@@ -77,26 +71,7 @@ class TestInteractive:
         child_spawn.sendline("pwd")
         child_spawn.expect("%")
 
-        # Source oh-my-zsh if it exists, otherwise just set up the plugin
-        zsh_path = "/tmp/ohmyzsh/"
-        ohmyzsh_sh = "oh-my-zsh.sh"
-
-        child_spawn.sendline(f"export ZSH={zsh_path}")
-        child_spawn.sendline("export KEEP_ZSHRC=yes")
-        child_spawn.expect("%")
-        if os.path.isfile(os.path.join(zsh_path, ohmyzsh_sh)):
-            child_spawn.sendline(f"source {zsh_path}{ohmyzsh_sh}")
-            child_spawn.expect("%")
-        else:
-            u = "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/" "install.sh"
-            install_cmd = f'sh -c "$(curl -fsSL {u})"'
-            child_spawn.sendline(f"yes | {install_cmd}")
-            child_spawn.expect("Run zsh to try it out.")
-            child_spawn.expect("%")
-            child_spawn.sendline(f"source {zsh_path}{ohmyzsh_sh}")
-            child_spawn.expect("%")
-
-        # Set test mode for the plugin
+        # Set test mode for the plugin (skip oh-my-zsh installation for faster tests)
         child_spawn.sendline("export ZSH_AI_ASSISTANT_TEST_MODE=1")
         child_spawn.expect("%")
         child_spawn.sendline("where zle")
