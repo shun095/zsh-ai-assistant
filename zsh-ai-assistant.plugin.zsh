@@ -226,10 +226,25 @@ aiask() {
 # Add aitrans command
 aitrans() {
     local target_language="japanese"
+    local text=""
     
     # Check if target language is provided as first argument
     if [[ $# -gt 0 ]]; then
-        target_language="$1"
+        # Check if the first argument looks like a language (simple heuristic)
+        # If it's a single word that could be a language, treat it as target_language
+        # Otherwise, treat it as text to translate
+        if [[ "$1" =~ ^(japanese|english|chinese|french|german|spanish|korean|italian|portuguese|russian|arabic|hindi)$ ]]; then
+            target_language="$1"
+            # If there are more arguments, treat them as text to translate
+            if [[ $# -gt 1 ]]; then
+                # Shift to get remaining arguments as text
+                shift
+                text="$*"
+            fi
+        else
+            # First argument is text to translate, keep default language
+            text="$*"
+        fi
     fi
     
     local original_dir=$(pwd)
@@ -239,8 +254,15 @@ aitrans() {
         return 1
     }
     
-    # Call Python interactive translation function
-    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/interactive_chat.py" translate "$target_language"
+    # Call Python translation function
+    # If text is provided as argument, use CLI mode (backward compatibility)
+    if [[ -n "$text" ]]; then
+        # CLI mode: translate text immediately using the CLI translate function
+        echo "$text" | uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" translate "$target_language"
+    else
+        # Interactive mode: start interactive translation session
+        uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/interactive_chat.py" translate "$target_language"
+    fi
     
     cd "$original_dir" >/dev/null 2>&1 || true
 }

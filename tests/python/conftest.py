@@ -14,11 +14,11 @@ from typing import Generator
 def reset_env() -> Generator[None, None, None]:
     """Reset environment variables before each test."""
     # Save current env vars
-    saved = {k: v for k, v in os.environ.items() if k.startswith(("OPENAI_", "AI_"))}
+    saved = {k: v for k, v in os.environ.items() if k.startswith(("OPENAI_", "AI_", "ZSH_"))}
 
     # Clear relevant env vars
     for key in list(os.environ.keys()):
-        if key.startswith(("OPENAI_", "AI_")):
+        if key.startswith(("OPENAI_", "AI_", "ZSH_")):
             del os.environ[key]
 
     yield

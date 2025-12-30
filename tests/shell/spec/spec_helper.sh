@@ -24,13 +24,14 @@ uv() {
     elif [[ "$4" == "interactive" ]]; then
       return 0
     elif [[ "$4" == "translate" ]]; then
-      local target_language="${5:-japanese}"
-      local text="${6:-}"
+      # Handle both CLI and interactive modes
+      # CLI mode: python cli.py translate <target_language>
+      # Interactive mode: python interactive_chat.py translate <target_language>
       
-      # If text not provided as argument, read from stdin
-      if [[ -z "$text" ]]; then
-        text=$(cat)
-      fi
+      local target_language="${5:-japanese}"
+      
+      # Read text from stdin
+      local text=$(cat)
       
       # Mock translation responses
       case "$text" in
