@@ -164,7 +164,7 @@ class InteractiveChat:
         Args:
             text: Text to translate
             target_language: Target language
-            
+
         Returns:
             The translated text
         """
