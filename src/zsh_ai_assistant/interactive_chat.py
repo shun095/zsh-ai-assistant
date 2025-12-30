@@ -23,8 +23,12 @@ logger = logging.getLogger(__name__)
 class InteractiveChat:
     """Interactive chat session with AI."""
 
-    def __init__(self, test_mode: bool = False) -> None:
+    def __init__(self, test_mode: bool | None = None) -> None:
         """Initialize interactive chat session."""
+        # Check for test mode using environment variable if not explicitly set
+        if test_mode is None:
+            test_mode = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE", "").lower() == "true"
+
         self.test_mode = test_mode
         self.config = AIConfig()
 
@@ -130,6 +134,16 @@ class InteractiveChat:
         Args:
             target_language: Target language for translation
         """
+        # Check if we're in test mode - if so, use non-interactive approach
+        if self.test_mode:
+            # In test mode, read from stdin for compatibility with shell tests
+            import sys
+
+            text = sys.stdin.read().strip()
+            if text:
+                self.translate_text(text, target_language)
+            return
+
         print(f"Starting translation to {target_language}. Type 'quit', 'exit', or 'q' to end.")
         print("Use Up/Down arrows to navigate history, Ctrl+R for fuzzy search.")
         print("Enter text to translate, then press Enter.")
@@ -199,11 +213,11 @@ class InteractiveChat:
             raise Exception(error_message)
 
 
-def main(test_mode: bool = False) -> None:
+def main(test_mode: bool | None = None) -> None:
     """Main entry point for interactive chat."""
     # Check for test mode using environment variable
-    if test_mode is False:  # Only check if not explicitly set
-        test_mode = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE") is not None
+    if test_mode is None:  # Only check if not explicitly set
+        test_mode = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE", "").lower() == "true"
 
     try:
         chat = InteractiveChat(test_mode=test_mode)
