@@ -4,7 +4,12 @@
 import os
 import tempfile
 
-from zsh_ai_assistant.prompt_history import PromptHistoryManager, get_prompt_session
+from zsh_ai_assistant.prompt_history import (
+    PromptHistoryManager,
+    get_prompt_session,
+    get_character_width,
+    get_string_display_width,
+)
 
 
 class TestPromptHistoryManager:
@@ -28,6 +33,57 @@ class TestPromptHistoryManager:
             assert manager.history_file == temp_path
         finally:
             os.unlink(temp_path)
+
+
+class TestCharacterWidthFunctions:
+    """Test cases for character width utility functions."""
+
+    def test_get_character_width_ascii(self) -> None:
+        """Test character width for ASCII characters."""
+        assert get_character_width("a") == 1
+        assert get_character_width("A") == 1
+        assert get_character_width("1") == 1
+        assert get_character_width(" ") == 1
+
+    def test_get_character_width_japanese(self) -> None:
+        """Test character width for Japanese characters."""
+        # Japanese Hiragana (should be 2)
+        assert get_character_width("あ") == 2
+        # Japanese Katakana (should be 2)
+        assert get_character_width("ア") == 2
+        # Japanese Kanji (should be 2)
+        assert get_character_width("日") == 2
+
+    def test_get_character_width_emoji(self) -> None:
+        """Test character width for emoji characters."""
+        # Emoji (should be 2)
+        assert get_character_width("😀") == 2
+        assert get_character_width("🎉") == 2
+
+    def test_get_character_width_mixed(self) -> None:
+        """Test character width for mixed character types."""
+        # Half-width Katakana (should be 1)
+        assert get_character_width("ｱ") == 1
+        # Full-width characters (should be 2)
+        assert get_character_width("Ａ") == 2
+
+    def test_get_character_width_empty(self) -> None:
+        """Test character width for empty string."""
+        assert get_character_width("") == 0
+
+    def test_get_string_display_width(self) -> None:
+        """Test string display width calculation."""
+        # ASCII string
+        assert get_string_display_width("hello") == 5
+
+        # Mixed string
+        assert get_string_display_width("hello世界") == 5 + 2 + 2  # hello (5) + 世 (2) + 界 (2)
+
+        # Emoji string
+        assert get_string_display_width("hello😀") == 5 + 2  # hello (5) + 😀 (2)
+
+        # Empty string
+        assert get_string_display_width("") == 0
 
     def test_add_to_history(self) -> None:
         """Test adding text to history."""
