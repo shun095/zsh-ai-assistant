@@ -27,7 +27,8 @@ class InteractiveChat:
         """Initialize interactive chat session."""
         # Check for test mode using environment variable if not explicitly set
         if test_mode is None:
-            test_mode = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE", "").lower() == "true"
+            test_mode_value = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE", "").lower()
+            test_mode = test_mode_value in ("true", "1", "yes", "on")
 
         self.test_mode = test_mode
         self.config = AIConfig()
@@ -134,14 +135,39 @@ class InteractiveChat:
         Args:
             target_language: Target language for translation
         """
-        # Check if we're in test mode - if so, use non-interactive approach
+        # Check if we're in test mode - if so, simulate interactive behavior
         if self.test_mode:
-            # In test mode, read from stdin for compatibility with shell tests
+            # In test mode, simulate interactive session for compatibility with shell tests
             import sys
 
-            text = sys.stdin.read().strip()
-            if text:
-                self.translate_text(text, target_language)
+            # Print the initial prompt to simulate interactive mode
+            print("Translate: ", end="", flush=True)
+
+            # Read from stdin line by line to simulate multiple inputs
+            while True:
+                try:
+                    # Read a line from stdin
+                    line = sys.stdin.readline()
+                    if not line:  # EOF
+                        break
+                    
+                    text = line.strip()
+                    
+                    # Check for exit commands
+                    if not text or text.lower() in ("quit", "exit", "q"):
+                        print("Goodbye!")
+                        break
+
+                    # Translate the text
+                    if text:
+                        self.translate_text(text, target_language)
+                        # Print the prompt again for next input
+                        print("\nTranslate: ", end="", flush=True)
+
+                except Exception as e:
+                    print(f"\nError: {e}")
+                    break
+
             return
 
         print(f"Starting translation to {target_language}. Type 'quit', 'exit', or 'q' to end.")
@@ -217,7 +243,8 @@ def main(test_mode: bool | None = None) -> None:
     """Main entry point for interactive chat."""
     # Check for test mode using environment variable
     if test_mode is None:  # Only check if not explicitly set
-        test_mode = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE", "").lower() == "true"
+        test_mode_value = os.environ.get("ZSH_AI_ASSISTANT_TEST_MODE", "").lower()
+        test_mode = test_mode_value in ("true", "1", "yes", "on")
 
     try:
         chat = InteractiveChat(test_mode=test_mode)
