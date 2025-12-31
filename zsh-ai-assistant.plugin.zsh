@@ -225,21 +225,26 @@ aiask() {
 
 # Add aitrans command
 aitrans() {
-    local text=""
     local target_language="japanese"
+    local text=""
     
-    # Check if text is provided as first argument
+    # Check if target language is provided as first argument
     if [[ $# -gt 0 ]]; then
-        text="$*"
-    # Read text to translate from stdin or prompt
-    elif [[ -p /dev/stdin ]]; then
-        text=$(cat)
-    else
-        echo "Text to translate (Ctrl+D to finish):"
-        # Read multiline input from terminal
-        while IFS= read -r line; do
-            text+="$line"$'\n'
-        done
+        # Check if the first argument looks like a language (simple heuristic)
+        # If it's a single word that could be a language, treat it as target_language
+        # Otherwise, treat it as text to translate
+        if [[ "$1" =~ ^(japanese|english|chinese|french|german|spanish|korean|italian|portuguese|russian|arabic|hindi)$ ]]; then
+            target_language="$1"
+            # If there are more arguments, treat them as text to translate
+            if [[ $# -gt 1 ]]; then
+                # Shift to get remaining arguments as text
+                shift
+                text="$*"
+            fi
+        else
+            # First argument is text to translate, keep default language
+            text="$*"
+        fi
     fi
     
     local original_dir=$(pwd)
@@ -249,10 +254,15 @@ aitrans() {
         return 1
     }
     
-    # Call Python translation function with streaming
-    # Use eval to capture and display output as it arrives
-    # Pass text via stdin to avoid quoting issues
-    uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" translate "$target_language" <<< "$text"
+    # Call Python translation function
+    # If text is provided as argument, use CLI mode (backward compatibility)
+    if [[ -n "$text" ]]; then
+        # CLI mode: translate text immediately using the CLI translate function
+        echo "$text" | uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/cli.py" translate "$target_language"
+    else
+        # Interactive mode: start interactive translation session
+        uv run python "${ZSH_AI_ASSISTANT_DIR}/src/zsh_ai_assistant/interactive_chat.py" translate "$target_language"
+    fi
     
     cd "$original_dir" >/dev/null 2>&1 || true
 }
