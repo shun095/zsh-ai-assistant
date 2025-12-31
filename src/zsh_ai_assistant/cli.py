@@ -5,7 +5,7 @@ import json
 import os
 import sys
 import logging
-from typing import List, Dict, Any, Callable, TypeVar
+from typing import Callable, TypeVar, Any
 
 # Add the src directory to Python path to ensure module can be imported
 # This allows the script to be run from any directory
@@ -156,50 +156,6 @@ def chat(messages_json: str, test_mode: bool = False, stream: bool = True) -> st
     return response.strip()
 
 
-def history_to_json(history_lines: str) -> str:
-    """Convert chat history format to OpenAI API compatible JSON format.
-
-    Input format: "user:message" or "assistant:message"
-    Output format: [{"role": "user", "content": "message"}]
-    """
-    # Read chat history from stdin
-    # Handle both actual newlines and the literal string "$'\n'" that zsh might pass
-    lines = history_lines.replace("$'\\n'", "").strip().split("\n")
-
-    # Convert chat history to OpenAI API format
-    messages = []
-    for line in lines:
-        line = line.strip()
-        if line and ":" in line:
-            role, content = line.split(":", 1)
-            # Use OpenAI API format: {"role": "user/assistant", "content": "message"}
-            messages.append({"role": role, "content": content})
-
-    # Output JSON
-    return json.dumps(messages)
-
-
-def convert_to_openai_format(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Convert messages from {"user": "content"} format to OpenAI API format {"role": "user", "content": "content"}."""
-    openai_messages = []
-    for msg in messages:
-        # Check if message is already in OpenAI format
-        if "role" in msg and "content" in msg:
-            openai_messages.append(msg)
-        # Convert from {"user": "content"} format
-        elif "user" in msg:
-            openai_messages.append({"role": "user", "content": msg["user"]})
-        elif "assistant" in msg:
-            openai_messages.append({"role": "assistant", "content": msg["assistant"]})
-        elif "system" in msg:
-            openai_messages.append({"role": "system", "content": msg["system"]})
-        else:
-            # If format is unknown, keep as-is
-            openai_messages.append(msg)
-
-    return openai_messages
-
-
 def translate(text: str, target_language: str, test_mode: bool = False, stream: bool = True) -> str:
     """Translate text to a target language.
 
@@ -277,12 +233,6 @@ def main() -> None:
             # Chat mode
             chat_history_json = sys.stdin.read().strip()
             result = chat(chat_history_json, test_mode)
-            print(result)
-
-        elif len(sys.argv) > 1 and sys.argv[1] == "history-to-json":
-            # History to JSON mode
-            history_lines = sys.stdin.read().strip()
-            result = history_to_json(history_lines)
             print(result)
 
         elif len(sys.argv) > 1 and sys.argv[1] == "interactive":

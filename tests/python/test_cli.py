@@ -6,8 +6,7 @@ import json
 from io import StringIO
 from unittest.mock import Mock, patch, MagicMock
 import pytest
-from zsh_ai_assistant.cli import generate_command, chat, history_to_json, main, convert_to_openai_format, translate
-from typing import List, Dict, Any
+from zsh_ai_assistant.cli import generate_command, chat, main, translate
 
 
 class TestCLIGenerateCommand:
@@ -121,57 +120,6 @@ class TestCLIChat:
             assert exc_info.value.code == 1
 
 
-class TestCLIHistoryToJson:
-    """Test cases for history_to_json function."""
-
-    def test_history_to_json_with_valid_input(self) -> None:
-        """Test history_to_json with valid input."""
-        history_lines = "user:Hello\nassistant:Hi there!\nuser:How are you?\nassistant:I'm good!"
-
-        result = history_to_json(history_lines)
-
-        expected = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"},
-            {"role": "user", "content": "How are you?"},
-            {"role": "assistant", "content": "I'm good!"},
-        ]
-
-        assert json.loads(result) == expected
-
-    def test_history_to_json_with_empty_input(self) -> None:
-        """Test history_to_json with empty input."""
-        result = history_to_json("")
-
-        assert json.loads(result) == []
-
-    def test_history_to_json_with_whitespace(self) -> None:
-        """Test history_to_json handles whitespace."""
-        history_lines = "user:Hello\nassistant:Hi"
-
-        result = history_to_json(history_lines)
-
-        expected = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi"},
-        ]
-
-        assert json.loads(result) == expected
-
-    def test_history_to_json_with_lines_without_colon(self) -> None:
-        """Test history_to_json handles lines without colon."""
-        history_lines = "user:Hello\ninvalid_line\nassistant:Hi"
-
-        result = history_to_json(history_lines)
-
-        expected = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi"},
-        ]
-
-        assert json.loads(result) == expected
-
-
 class TestCLIMain:
     """Test cases for main function."""
 
@@ -235,35 +183,6 @@ class TestCLIMain:
             # Check output
             captured = capsys.readouterr()
             assert captured.out.strip() == "Hi there!"
-
-    def test_main_with_history_to_json_arg(self, capsys) -> None:  # type: ignore[no-untyped-def]
-        """Test main with history-to-json arg."""
-        history_lines = "user:Hello assistant:Hi"
-
-        with patch("zsh_ai_assistant.cli.history_to_json") as mock_history:
-            mock_history.return_value = json.dumps(
-                [
-                    {"role": "user", "content": "Hello"},
-                    {"role": "assistant", "content": "Hi"},
-                ]
-            )
-
-            # Simulate reading from stdin
-            with patch.object(sys, "argv", ["cli", "history-to-json"]):
-                with patch("sys.stdin", MagicMock(read=MagicMock(return_value=history_lines))):
-                    main()
-
-            mock_history.assert_called_once_with(history_lines)
-
-            # Check output
-            captured = capsys.readouterr()
-            expected = json.dumps(
-                [
-                    {"role": "user", "content": "Hello"},
-                    {"role": "assistant", "content": "Hi"},
-                ]
-            )
-            assert captured.out.strip() == expected
 
     def test_main_without_arguments(self, capsys) -> None:  # type: ignore[no-untyped-def]
         """Test main without arguments shows usage."""
@@ -358,94 +277,6 @@ class TestCLIMain:
             # Since we're mocking translate, it doesn't actually print, so output should be empty
             # In streaming mode, output is printed by translate function, not captured here
             # So we just verify the function was called correctly
-
-
-class TestMessageConversion:
-    """Test cases for message format conversion."""
-
-    def test_convert_to_openai_format_with_user_message(self) -> None:
-        """Test conversion of {"user": "content"} to OpenAI format."""
-        messages = [{"user": "Hello"}]
-        result = convert_to_openai_format(messages)
-        expected = [{"role": "user", "content": "Hello"}]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_assistant_message(self) -> None:
-        """Test conversion of {"assistant": "content"} to OpenAI format."""
-        messages = [{"assistant": "Hi there!"}]
-        result = convert_to_openai_format(messages)
-        expected = [{"role": "assistant", "content": "Hi there!"}]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_system_message(self) -> None:
-        """Test conversion of {"system": "content"} to OpenAI format."""
-        messages = [{"system": "You are a helpful assistant."}]
-        result = convert_to_openai_format(messages)
-        expected = [{"role": "system", "content": "You are a helpful assistant."}]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_mixed_messages(self) -> None:
-        """Test conversion of mixed message formats."""
-        messages = [{"user": "Hello"}, {"assistant": "Hi there!"}, {"user": "How are you?"}]
-        result = convert_to_openai_format(messages)
-        expected = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"},
-            {"role": "user", "content": "How are you?"},
-        ]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_openai_format(self) -> None:
-        """Test that OpenAI format messages pass through unchanged."""
-        messages = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi there!"}]
-        result = convert_to_openai_format(messages)
-        expected = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi there!"}]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_mixed_formats(self) -> None:
-        """Test conversion with a mix of old and new formats."""
-        messages = [{"user": "Hello"}, {"role": "assistant", "content": "Hi there!"}, {"user": "How are you?"}]
-        result = convert_to_openai_format(messages)
-        expected = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"},
-            {"role": "user", "content": "How are you?"},
-        ]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_unknown_format(self) -> None:
-        """Test that unknown message formats are preserved."""
-        messages = [{"unknown": "content"}]
-        result = convert_to_openai_format(messages)
-        expected = [{"unknown": "content"}]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_multiple_unknown_formats(self) -> None:
-        """Test that multiple unknown message formats are preserved."""
-        messages = [{"unknown": "content1"}, {"weird": "content2"}, {"random": "content3"}]
-        result = convert_to_openai_format(messages)
-        expected = [{"unknown": "content1"}, {"weird": "content2"}, {"random": "content3"}]
-        assert result == expected
-
-    def test_convert_to_openai_format_with_empty_list(self) -> None:
-        """Test conversion with empty message list."""
-        messages: List[Dict[str, Any]] = []
-        result = convert_to_openai_format(messages)
-        expected: List[Dict[str, Any]] = []
-        assert result == expected
-
-    def test_convert_to_openai_format_preserves_additional_fields(self) -> None:
-        """Test that additional fields in OpenAI format are preserved."""
-        messages: List[Dict[str, Any]] = [
-            {"role": "user", "content": "Hello", "name": "user1"},
-            {"role": "assistant", "content": "Hi there!", "tool_calls": []},
-        ]
-        result = convert_to_openai_format(messages)
-        expected = [
-            {"role": "user", "content": "Hello", "name": "user1"},
-            {"role": "assistant", "content": "Hi there!", "tool_calls": []},
-        ]
-        assert result == expected
 
 
 class TestCLITranslate:

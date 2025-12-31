@@ -150,9 +150,9 @@ class InteractiveChat:
                     line = sys.stdin.readline()
                     if not line:  # EOF
                         break
-                    
+
                     text = line.strip()
-                    
+
                     # Check for exit commands
                     if not text or text.lower() in ("quit", "exit", "q"):
                         print("Goodbye!")
