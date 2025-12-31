@@ -4,7 +4,6 @@ import os
 import pytest
 from unittest.mock import Mock, patch
 from zsh_ai_assistant.config import AIConfig
-from zsh_ai_assistant.chat_history import InMemoryChatHistory
 
 
 from typing import Generator
@@ -39,12 +38,6 @@ def valid_config() -> AIConfig:
 def invalid_config() -> AIConfig:
     """Create an invalid AI configuration for testing."""
     return AIConfig()
-
-
-@pytest.fixture
-def chat_history() -> InMemoryChatHistory:
-    """Create a new InMemoryChatHistory instance."""
-    return InMemoryChatHistory()
 
 
 @pytest.fixture
