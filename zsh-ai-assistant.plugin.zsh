@@ -105,6 +105,21 @@ zsh_ai_assistant_hide_loading() {
     unset notify monitor
 }
 
+# Save prompt to official zsh history
+zsh_ai_assistant_save_to_history() {
+    local prompt="$1"
+    
+    if [[ -z "$prompt" ]]; then
+        return 1
+    fi
+    
+    # Use zsh's built-in print -s to add to history
+    # This adds the prompt to the official zsh history file (HISTFILE)
+    print -s "$prompt"
+    
+    return 0
+}
+
 # Generate command from comment
 zsh_ai_assistant_generate_command() {
     local comment="$1"
@@ -162,13 +177,15 @@ zsh_ai_assistant_transform_command() {
     # Phase 3: Hide animation
     zsh_ai_assistant_hide_loading
     
-    # Phase 4: Replace BUFFER
+    # Phase 4: Replace BUFFER and save to history if successful
     if [[ -n "$generated_command" ]]; then
         BUFFER="$generated_command"
         CURSOR=${#BUFFER}
         if [[ -n "${ZLE_STATE:-}" ]]; then
             zle .redisplay
         fi
+        # Save prompt to history only if command generation succeeded
+        zsh_ai_assistant_save_to_history "$prompt"
         return 0
     else
         if [[ -n "${ZLE_STATE:-}" ]]; then
