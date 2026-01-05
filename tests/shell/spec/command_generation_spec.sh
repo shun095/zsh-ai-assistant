@@ -47,6 +47,30 @@ Describe 'zsh_ai_assistant_generate_command()'
   End
 End
 
+# Test suite for history saving functionality
+Describe 'zsh_ai_assistant_save_to_history()'
+  # Test 1: Save valid prompt to history
+  It 'should save valid prompt to zsh history'
+    # Save a test prompt
+    When run zsh_ai_assistant_save_to_history "# test prompt"
+    
+    # Should succeed
+    The status should be successful
+  End
+
+  # Test 2: Handle empty prompt
+  It 'should handle empty prompt gracefully'
+    When run zsh_ai_assistant_save_to_history ""
+    The status should be failure
+  End
+
+  # Test 3: Handle whitespace-only prompt
+  It 'should handle whitespace-only prompt gracefully'
+    When run zsh_ai_assistant_save_to_history "   "
+    The status should be successful
+  End
+End
+
 # Test suite for command transformation functionality
 Describe 'zsh_ai_assistant_transform_command()'
   # Test 1: Transform command with valid input
