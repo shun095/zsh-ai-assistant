@@ -75,22 +75,13 @@ class LangChainAIService(AIServiceInterface):
         # Convert messages to LangChain format
         langchain_messages: list = []
 
-        # Add default system message if no system message is provided
-        has_system_message = any(msg.get("role") == "system" for msg in messages)
-        if not has_system_message:
-            system_message = SystemMessage(
-                content=(
-                    "You are a helpful AI assistant. "
-                    "Provide concise, accurate responses to user questions. "
-                    "Be friendly and professional."
-                )
-            )
-            langchain_messages.append(system_message)
-
         for msg in messages:
             role = msg.get("role")
             content = msg.get("content")
 
+            # The system message will be automatically set to the default value
+            # for the model by the LLM server if no specific system message is
+            # provided.
             if role == "system":
                 langchain_messages.append(SystemMessage(content=content))
             elif role == "user":
@@ -115,22 +106,13 @@ class LangChainAIService(AIServiceInterface):
         # Convert messages to LangChain format
         langchain_messages: list = []
 
-        # Add default system message if no system message is provided
-        has_system_message = any(msg.get("role") == "system" for msg in messages)
-        if not has_system_message:
-            system_message = SystemMessage(
-                content=(
-                    "You are a helpful AI assistant. "
-                    "Provide concise, accurate responses to user questions. "
-                    "Be friendly and professional."
-                )
-            )
-            langchain_messages.append(system_message)
-
         for msg in messages:
             role = msg.get("role")
             content = msg.get("content")
 
+            # The system message will be automatically set to the default value
+            # for the model by the LLM server if no specific system message is
+            # provided.
             if role == "system":
                 langchain_messages.append(SystemMessage(content=content))
             elif role == "user":
